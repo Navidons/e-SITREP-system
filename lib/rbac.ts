@@ -34,7 +34,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionName[]> = {
 };
 
 export type SessionUser = {
-  id: number;
+  id: string;
   username: string;
   fullName: string;
   stationId: number | null;

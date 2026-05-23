@@ -1,3 +1,18 @@
+import { NATIONALITY_CODES } from "@/lib/constants/nationalities";
+
+const CODE_ORDER = new Map(
+  NATIONALITY_CODES.map((n, i) => [n.code, i]),
+);
+
+function sortNationalityCodes(codes: string[]): string[] {
+  return [...codes].sort((a, b) => {
+    const ai = CODE_ORDER.get(a as (typeof NATIONALITY_CODES)[number]["code"]) ?? 999;
+    const bi = CODE_ORDER.get(b as (typeof NATIONALITY_CODES)[number]["code"]) ?? 999;
+    if (ai !== bi) return ai - bi;
+    return a.localeCompare(b);
+  });
+}
+
 export type MovementRow = {
   movementType: "arrival" | "departure";
   nationalityCode: string;
@@ -47,14 +62,13 @@ function formatMovementLine(
     });
   }
 
-  const segments = [...grouped.entries()]
-    .map(([code, { male, female }]) => ({
-      code,
-      total: male + female,
-      female,
-    }))
+  const codes = sortNationalityCodes([...grouped.keys()]);
+  const segments = codes
+    .map((code) => {
+      const { male, female } = grouped.get(code)!;
+      return { code, total: male + female, female };
+    })
     .filter((s) => s.total > 0)
-    .sort((a, b) => b.total - a.total)
     .map((s) => formatNationalitySegment(s.total, s.code, s.female));
 
   const grandTotal = [...grouped.values()].reduce(

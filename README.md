@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# e-SITREP System
 
-## Getting Started
+Secure web platform to automate **Daily** and **Weekly Border Situation Reports (SITREPs)** for NCIC — station data entry, HQ review workflow, consolidated national daily SITREP (HQ compressed format), and weekly Excel matrix export.
 
-First, run the development server:
+**Stack:** Next.js 16, TypeScript, Prisma, PostgreSQL, NextAuth (credentials).
+
+## Quick start
+
+### 1. Prerequisites
+
+- Node.js 20+
+- Docker Desktop (for PostgreSQL)
+
+### 2. Environment
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Edit `.env` and set `AUTH_SECRET` (e.g. `openssl rand -base64 32`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Database
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose up -d
+pnpm install
+pnpm db:push
+pnpm db:seed
+```
 
-## Learn More
+### 4. Run
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Demo accounts
 
-## Deploy on Vercel
+Password for all users: **`Demo@2026`**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Username | Role | Use |
+|----------|------|-----|
+| `elegu.inputter` | Station inputter | Daily data entry (Elegu) |
+| `reviewer` | HQ reviewer | Inbox → Review |
+| `verifier` | HQ verifier | Verify → Generate consolidated |
+| `authoriser` | HQ authoriser | Approve reports |
+| `admin` | Admin | Full access |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Sample data:** Elegu report for **2026-05-08** is pre-seeded and **approved** (matches `instructions/support-files/strep system.txt`).
+
+## Features (MVP)
+
+- Station arrivals/departures by nationality and gender
+- Asylum seekers and remarks
+- Workflow: draft → submitted → reviewed → verified → approved
+- Consolidated SITREP text generator (HQ format)
+- Weekly Excel export (stations × days)
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Development server |
+| `pnpm db:push` | Apply Prisma schema |
+| `pnpm db:seed` | Seed stations, roles, demo users, Elegu report |
+| `pnpm test:formatter` | Validate Elegu consolidated strings |
+
+## Project docs
+
+Requirements and samples live in [`instructions/`](instructions/). Implementation plan: [`e-sitrep_mvp_build_a94b9943.plan.md`](e-sitrep_mvp_build_a94b9943.plan.md).
+
+## Phase 2 (deferred)
+
+Offline PWA, Keycloak SSO, PDF templates matching exact government layout, admin CRUD UI, Kubernetes deployment.

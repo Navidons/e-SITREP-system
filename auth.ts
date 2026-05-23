@@ -2,25 +2,8 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { authConfig } from "@/auth.config";
 import type { SessionUser } from "@/lib/rbac";
-
-declare module "next-auth" {
-  interface Session {
-    user: SessionUser;
-  }
-  interface User extends SessionUser {}
-}
-
-declare module "@auth/core/jwt" {
-  interface JWT {
-    id: number;
-    username: string;
-    fullName: string;
-    stationId: number | null;
-    roles: string[];
-    permissions: string[];
-  }
-}
 
 async function loadUserPermissions(userId: number) {
   const userRoles = await prisma.userRole.findMany({
@@ -45,6 +28,9 @@ async function loadUserPermissions(userId: number) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
   providers: [
     Credentials({
       name: "credentials",
@@ -59,7 +45,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { username },
-          include: { station: true },
         });
         if (!user || !user.isActive) return null;
 
@@ -74,7 +59,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         return {
-          id: user.id,
+          id: String(user.id),
           username: user.username,
           fullName: user.fullName,
           stationId: user.stationId,
@@ -84,29 +69,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id as number;
-        token.username = user.username;
-        token.fullName = user.fullName;
-        token.stationId = user.stationId;
-        token.roles = user.roles;
-        token.permissions = user.permissions;
+        const u = user as SessionUser;
+        token.id = u.id;
+        token.username = u.username;
+        token.fullName = u.fullName;
+        token.stationId = u.stationId;
+        token.roles = u.roles;
+        token.permissions = u.permissions;
       }
       return token;
     },
     async session({ session, token }) {
-      session.user = {
-        id: token.id,
-        username: token.username,
-        fullName: token.fullName,
-        stationId: token.stationId,
-        roles: token.roles,
-        permissions: token.permissions,
+      const user: SessionUser = {
+        id: token.id as string,
+        username: token.username as string,
+        fullName: token.fullName as string,
+        stationId: token.stationId as number | null,
+        roles: token.roles as string[],
+        permissions: token.permissions as string[],
       };
+      session.user = user as typeof session.user;
       return session;
     },
   },

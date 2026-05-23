@@ -26,7 +26,17 @@ export type DailyReportPayload = {
   medicalScreening?: string;
   generalRemarks?: string;
   urgentMatters?: string;
-  movements: MovementInput[];
+  movements?: MovementInput[];
   specialCategories?: SpecialCategoryInput[];
   incidents?: IncidentInput[];
+};
+
+export type DayEntryPayload = {
+  reportDate: string;
+  entryType: "arrival" | "departure" | "asylum_seeker" | "refugee";
+  nationalityCode?: string;
+  male: number;
+  female: number;
+  recordedAt?: string;
+  notes?: string;
 };

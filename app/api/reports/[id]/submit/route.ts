@@ -25,7 +25,7 @@ export async function POST(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const result = await transitionReport(reportId, user.id, "submit");
+  const result = await transitionReport(reportId, Number(user.id), "submit");
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }

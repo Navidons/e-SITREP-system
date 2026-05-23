@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 import type { DailyReportPayload } from "@/types/reports";
 import { MovementType, ReportStatus } from "@prisma/client";
 import { parseReportDate } from "@/lib/utils";
+import {
+  aggregateMovements,
+  aggregateSpecialCategories,
+} from "@/lib/reports/aggregate";
 
 export const reportInclude = {
   station: true,
@@ -43,11 +47,8 @@ export async function upsertDailyReport(
     },
   });
 
-  await prisma.movement.deleteMany({ where: { reportId: report.id } });
-  await prisma.specialCategory.deleteMany({ where: { reportId: report.id } });
-  await prisma.incident.deleteMany({ where: { reportId: report.id } });
-
-  if (payload.movements.length > 0) {
+  if (payload.movements && payload.movements.length > 0) {
+    await prisma.movement.deleteMany({ where: { reportId: report.id } });
     await prisma.movement.createMany({
       data: payload.movements.map((m) => ({
         reportId: report.id,
@@ -63,6 +64,7 @@ export async function upsertDailyReport(
   }
 
   if (payload.specialCategories?.length) {
+    await prisma.specialCategory.deleteMany({ where: { reportId: report.id } });
     await prisma.specialCategory.createMany({
       data: payload.specialCategories.map((s) => ({
         reportId: report.id,
@@ -75,6 +77,7 @@ export async function upsertDailyReport(
   }
 
   if (payload.incidents?.length) {
+    await prisma.incident.deleteMany({ where: { reportId: report.id } });
     await prisma.incident.createMany({
       data: payload.incidents.map((i) => ({
         reportId: report.id,
@@ -89,6 +92,25 @@ export async function upsertDailyReport(
 
   return prisma.stationDailyReport.findUnique({
     where: { id: report.id },
+    include: reportInclude,
+  });
+}
+
+export async function updateReportRemarks(
+  reportId: number,
+  payload: Pick<
+    DailyReportPayload,
+    "staffOnDuty" | "medicalScreening" | "generalRemarks" | "urgentMatters"
+  >,
+) {
+  return prisma.stationDailyReport.update({
+    where: { id: reportId },
+    data: {
+      staffOnDuty: payload.staffOnDuty ?? 0,
+      medicalScreening: payload.medicalScreening,
+      generalRemarks: payload.generalRemarks,
+      urgentMatters: payload.urgentMatters,
+    },
     include: reportInclude,
   });
 }
@@ -111,19 +133,24 @@ export function reportToConsolidatedInput(
     }>;
   },
 ) {
+  const rawMovements = report.movements.map((m) => ({
+    movementType: m.movementType,
+    nationalityCode: m.nationalityCode,
+    male: m.male,
+    female: m.female,
+  }));
+
+  const aggregated = aggregateMovements(rawMovements);
+
   return {
     stationCode: report.station.code,
     stationName: report.station.name,
-    movements: report.movements.map((m) => ({
+    movements: aggregated.map((m) => ({
       movementType: m.movementType as "arrival" | "departure",
       nationalityCode: m.nationalityCode,
       male: m.male,
       female: m.female,
     })),
-    specialCategories: report.specialCategories.map((s) => ({
-      category: s.category,
-      male: s.male,
-      female: s.female,
-    })),
+    specialCategories: aggregateSpecialCategories(report.specialCategories),
   };
 }

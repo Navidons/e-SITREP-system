@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: Params) {
   const body = await request.json().catch(() => ({}));
   const result = await transitionReport(
     Number(id),
-    user.id,
+    Number(user.id),
     "reject",
     body.comment,
   );

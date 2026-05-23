@@ -70,10 +70,12 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   station       BorderStation?       @relation(fields: [stationId], references: [id])
-  userRoles     UserRole[]
-  reports       StationDailyReport[] @relation("SubmittedBy")
-  auditLogs     AuditLog[]
-  assignedRoles UserRole[]           @relation("AssignedBy")
+  userRoles       UserRole[]
+  reports         StationDailyReport[] @relation("SubmittedBy")
+  movementEntries Movement[]           @relation("MovementEnteredBy")
+  specialEntries  SpecialCategory[]    @relation("SpecialEnteredBy")
+  auditLogs       AuditLog[]
+  assignedRoles   UserRole[]           @relation("AssignedBy")
 
   @@map("users")
 }
@@ -136,25 +138,35 @@ model Movement {
   nationalityCode  String       @map("nationality_code") @db.VarChar(10)
   male             Int          @default(0)
   female           Int          @default(0)
+  recordedAt       DateTime     @default(now()) @map("recorded_at")
+  enteredById      Int?         @map("entered_by")
+  notes            String?
   createdAt        DateTime     @default(now()) @map("created_at")
 
-  report StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  report    StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  enteredBy User?              @relation("MovementEnteredBy", fields: [enteredById], references: [id])
 
-  @@index([reportId])
+  @@index([reportId, recordedAt])
   @@map("movements")
 }
 
 model SpecialCategory {
-  id        Int      @id @default(autoincrement())
-  reportId  Int      @map("report_id")
-  category  String   @db.VarChar(50)
-  male      Int      @default(0)
-  female    Int      @default(0)
-  details   String?
-  createdAt DateTime @default(now()) @map("created_at")
+  id              Int      @id @default(autoincrement())
+  reportId        Int      @map("report_id")
+  category        String   @db.VarChar(50)
+  nationalityCode String?  @map("nationality_code") @db.VarChar(10)
+  male            Int      @default(0)
+  female          Int      @default(0)
+  recordedAt      DateTime @default(now()) @map("recorded_at")
+  enteredById     Int?     @map("entered_by")
+  details         String?
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
 
-  report StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  report    StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  enteredBy User?              @relation("SpecialEnteredBy", fields: [enteredById], references: [id])
 
+  @@index([reportId, recordedAt])
   @@map("special_categories")
 }
 

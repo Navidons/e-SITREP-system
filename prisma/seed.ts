@@ -153,12 +153,12 @@ async function main() {
     where: {
       stationId_reportDate: { stationId: eleguId, reportDate },
     },
-    update: { status: ReportStatus.approved },
+    update: { status: ReportStatus.draft },
     create: {
       stationId: eleguId,
       reportDate,
       submittedById: eleguUser?.id,
-      status: ReportStatus.approved,
+      status: ReportStatus.draft,
       staffOnDuty: 12,
       medicalScreening: "All travellers screened per protocol.",
       generalRemarks: "Normal operations.",
@@ -168,7 +168,28 @@ async function main() {
   await prisma.movement.deleteMany({ where: { reportId: eleguReport.id } });
   await prisma.specialCategory.deleteMany({ where: { reportId: eleguReport.id } });
 
-  for (const [code, male, female] of ELEGU_ARRIVALS) {
+  const dayBase = new Date("2026-05-08T00:00:00.000Z");
+  const at = (hour: number, min = 0) =>
+    new Date(dayBase.getTime() + hour * 3_600_000 + min * 60_000);
+
+  // Simulated batches through the day (sums match ELEGU 08.05.2026 SITREP)
+  const arrivalBatches: Array<[string, number, number, number, number, string?]> = [
+    ["SSD", 40, 20, 7, 0, "Morning Sudan block"],
+    ["SSD", 39, 23, 9, 30, "Midday South Sudan"],
+    ["KE", 40, 2, 8, 0],
+    ["KE", 26, 2, 10, 15],
+    ["ER", 10, 1, 11, 0],
+    ["ER", 6, 0, 14, 30],
+    ["UG", 6, 2, 15, 0],
+    ["UG", 4, 2, 16, 45],
+    ["BI", 1, 0, 7, 30],
+    ["RW", 1, 0, 12, 0],
+    ["SD", 5, 1, 13, 0],
+    ["SD", 3, 0, 17, 0],
+    ["TZ", 1, 0, 18, 30],
+  ];
+
+  for (const [code, male, female, h, m, note] of arrivalBatches) {
     await prisma.movement.create({
       data: {
         reportId: eleguReport.id,
@@ -176,11 +197,28 @@ async function main() {
         nationalityCode: code,
         male,
         female,
+        recordedAt: at(h, m),
+        enteredById: eleguUser?.id,
+        notes: note,
       },
     });
   }
 
-  for (const [code, male, female] of ELEGU_DEPARTURES) {
+  const departureBatches: Array<[string, number, number, number, number]> = [
+    ["SSD", 45, 18, 8, 0],
+    ["SSD", 35, 18, 11, 0],
+    ["KE", 15, 8, 9, 30],
+    ["KE", 11, 7, 14, 0],
+    ["UG", 14, 9, 10, 0],
+    ["UG", 13, 8, 15, 30],
+    ["ER", 5, 1, 12, 0],
+    ["ER", 3, 0, 16, 0],
+    ["SD", 8, 0, 13, 30],
+    ["BI", 4, 0, 17, 0],
+    ["USA", 1, 0, 18, 0],
+  ];
+
+  for (const [code, male, female, h, m] of departureBatches) {
     await prisma.movement.create({
       data: {
         reportId: eleguReport.id,
@@ -188,6 +226,8 @@ async function main() {
         nationalityCode: code,
         male,
         female,
+        recordedAt: at(h, m),
+        enteredById: eleguUser?.id,
       },
     });
   }
@@ -196,8 +236,22 @@ async function main() {
     data: {
       reportId: eleguReport.id,
       category: "asylum_seekers",
-      male: 33,
-      female: 22,
+      male: 20,
+      female: 12,
+      recordedAt: at(10, 0),
+      enteredById: eleguUser?.id,
+      notes: "Morning intake",
+    },
+  });
+  await prisma.specialCategory.create({
+    data: {
+      reportId: eleguReport.id,
+      category: "asylum_seekers",
+      male: 13,
+      female: 10,
+      recordedAt: at(15, 0),
+      enteredById: eleguUser?.id,
+      notes: "Afternoon intake",
     },
   });
 

@@ -1,21 +1,24 @@
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
 import { NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/auth"];
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-  const isLoggedIn = !!req.auth;
+  const path = req.nextUrl.pathname;
+  const isPublic =
+    path === "/" ||
+    path.startsWith("/login") ||
+    path.startsWith("/api/auth");
 
-  if (!isLoggedIn && !isPublic && pathname !== "/") {
-    const login = new URL("/login", req.nextUrl.origin);
-    login.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(login);
+  if (req.auth?.user && path === "/login") {
+    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
 
-  if (isLoggedIn && pathname === "/login") {
-    return NextResponse.redirect(new URL("/dashboard", req.nextUrl.origin));
+  if (!req.auth && !isPublic) {
+    const login = new URL("/login", req.nextUrl);
+    login.searchParams.set("callbackUrl", path);
+    return NextResponse.redirect(login);
   }
 
   return NextResponse.next();
