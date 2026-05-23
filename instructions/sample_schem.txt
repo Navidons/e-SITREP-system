@@ -1,0 +1,274 @@
+-- =============================================
+-- BORDER SITREP AUTOMATION SYSTEM (BSAS)
+-- Full PostgreSQL Schema - Enterprise Grade
+-- Version: 1.0
+-- Date: May 21, 2026
+-- =============================================
+
+-- Enable necessary extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pgcrypto;        -- For password hashing if needed
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";       -- For better text search
+
+-- =============================================
+-- 1. MASTER DATA
+-- =============================================
+
+CREATE TABLE border_stations (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    cluster VARCHAR(50),
+    type VARCHAR(30) CHECK (type IN ('Land', 'Air', 'Lake', 'Airstrip', 'Other')),
+    location TEXT,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 2. USER MANAGEMENT & RBAC
+-- =============================================
+
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL, -- ADMIN, HQ_AUTHORISER, HQ_VERIFIER, HQ_REVIEWER, STATION_INPUTTER, CLUSTER_SUPERVISOR
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL, -- e.g., 'station.input', 'report.generate.consolidated', 'weekly.export'
+    description TEXT
+);
+
+CREATE TABLE role_permissions (
+    role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id INTEGER REFERENCES permissions(id) ON DELETE CASCADE,
+    PRIMARY KEY (role_id, permission_id)
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    password_hash TEXT NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    station_id INTEGER REFERENCES border_stations(id),
+    is_active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_roles (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+    assigned_by INTEGER REFERENCES users(id),
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, role_id)
+);
+
+-- =============================================
+-- 3. CORE REPORTING TABLES
+-- =============================================
+
+CREATE TABLE station_daily_reports (
+    id SERIAL PRIMARY KEY,
+    station_id INTEGER NOT NULL REFERENCES border_stations(id),
+    report_date DATE NOT NULL,
+    submitted_by INTEGER REFERENCES users(id),
+    submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'draft' 
+        CHECK (status IN ('draft', 'submitted', 'reviewed', 'verified', 'approved', 'rejected')),
+    staff_on_duty INTEGER DEFAULT 0,
+    medical_screening TEXT,
+    general_remarks TEXT,
+    urgent_matters TEXT,
+    UNIQUE (station_id, report_date)
+);
+
+CREATE TABLE movements (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER NOT NULL REFERENCES station_daily_reports(id) ON DELETE CASCADE,
+    movement_type VARCHAR(10) NOT NULL CHECK (movement_type IN ('arrival', 'departure')),
+    nationality_code VARCHAR(10) NOT NULL,
+    male INTEGER DEFAULT 0 CHECK (male >= 0),
+    female INTEGER DEFAULT 0 CHECK (female >= 0),
+    total INTEGER GENERATED ALWAYS AS (male + female) STORED,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE special_categories (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER NOT NULL REFERENCES station_daily_reports(id) ON DELETE CASCADE,
+    category VARCHAR(50) NOT NULL, -- asylum_seekers, deported, offloaded, returnees, etc.
+    male INTEGER DEFAULT 0,
+    female INTEGER DEFAULT 0,
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE incidents (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER NOT NULL REFERENCES station_daily_reports(id) ON DELETE CASCADE,
+    incident_type VARCHAR(100), -- deportation, system_downtime, denial_of_entry, etc.
+    description TEXT NOT NULL,
+    passport_no VARCHAR(50),
+    person_name VARCHAR(100),
+    action_taken TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 4. AUDIT & LOGGING
+-- =============================================
+
+CREATE TABLE audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    action VARCHAR(50) NOT NULL, -- CREATE, UPDATE, DELETE, SUBMIT, APPROVE, etc.
+    entity_type VARCHAR(50) NOT NULL, -- 'station_daily_report', 'movement', etc.
+    entity_id INTEGER,
+    old_values JSONB,
+    new_values JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- INDEXES FOR PERFORMANCE
+-- =============================================
+
+CREATE INDEX idx_station_daily_reports_station_date ON station_daily_reports(station_id, report_date);
+CREATE INDEX idx_station_daily_reports_status ON station_daily_reports(status);
+CREATE INDEX idx_movements_report_id ON movements(report_id);
+CREATE INDEX idx_movements_nationality ON movements(nationality_code);
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at);
+CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
+
+-- =============================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- =============================================
+
+ALTER TABLE station_daily_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE special_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE incidents ENABLE ROW LEVEL SECURITY;
+
+-- Station Inputter can only see/edit their own station
+CREATE POLICY station_inputter_policy ON station_daily_reports
+    USING (station_id = (SELECT station_id FROM users WHERE id = current_setting('app.current_user_id', true)::int))
+    WITH CHECK (station_id = (SELECT station_id FROM users WHERE id = current_setting('app.current_user_id', true)::int));
+
+-- HQ roles can see all reports
+CREATE POLICY hq_view_all_policy ON station_daily_reports
+    USING (EXISTS (
+        SELECT 1 FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = current_setting('app.current_user_id', true)::int
+        AND r.name LIKE 'HQ_%'
+    ));
+
+-- Similar policies should be created for movements, special_categories, incidents...
+
+-- =============================================
+-- TRIGGERS FOR AUDIT & UPDATED_AT
+-- =============================================
+
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_border_stations_updated_at
+BEFORE UPDATE ON border_stations
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+CREATE TRIGGER trg_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- Audit Trigger Example
+CREATE OR REPLACE FUNCTION audit_trigger_func()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO audit_logs(user_id, action, entity_type, entity_id, old_values, new_values)
+    VALUES (
+        current_setting('app.current_user_id', true)::int,
+        TG_OP,
+        TG_TABLE_NAME,
+        NEW.id,
+        CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD) ELSE NULL END,
+        CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END
+    );
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Attach audit trigger to key tables
+CREATE TRIGGER trg_audit_station_daily_reports
+AFTER INSERT OR UPDATE OR DELETE ON station_daily_reports
+FOR EACH ROW EXECUTE FUNCTION audit_trigger_func();
+
+-- =============================================
+-- MATERIALIZED VIEWS (For Fast Weekly Reports)
+-- =============================================
+
+CREATE MATERIALIZED VIEW mv_weekly_station_summary AS
+SELECT 
+    s.name AS station_name,
+    dr.report_date,
+    SUM(CASE WHEN m.movement_type = 'arrival' THEN m.total ELSE 0 END) AS arrivals,
+    SUM(CASE WHEN m.movement_type = 'departure' THEN m.total ELSE 0 END) AS departures
+FROM station_daily_reports dr
+JOIN border_stations s ON dr.station_id = s.id
+LEFT JOIN movements m ON dr.id = m.report_id
+WHERE dr.status = 'approved'
+GROUP BY s.name, dr.report_date;
+
+-- Refresh function
+CREATE OR REPLACE FUNCTION refresh_weekly_summary()
+RETURNS VOID AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW mv_weekly_station_summary;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =============================================
+-- INITIAL SEED DATA
+-- =============================================
+
+-- Insert sample stations
+INSERT INTO border_stations (code, name, cluster, type) VALUES
+('ENT', 'ENTEBBE', 'Kampala', 'Air'),
+('BUS', 'BUSIA', 'Eastern', 'Land'),
+('ELE', 'ELEGU', 'Northern', 'Land'),
+('MAL', 'MALABA', 'Eastern', 'Land'),
+('MPO', 'MPONDWE', 'Western', 'Land')
+ON CONFLICT DO NOTHING;
+
+-- Insert basic roles
+INSERT INTO roles (name, description) VALUES
+('ADMIN', 'System Administrator - Full Access'),
+('HQ_AUTHORISER', 'HQ Final Approver'),
+('HQ_VERIFIER', 'HQ Data Verifier'),
+('HQ_REVIEWER', 'HQ Reviewer'),
+('STATION_INPUTTER', 'Border Post Data Inputter'),
+('CLUSTER_SUPERVISOR', 'Cluster Level Supervisor');
+
+-- Insert sample permissions
+INSERT INTO permissions (name, description) VALUES
+('station.input', 'Enter data for assigned station'),
+('report.review', 'Review station reports'),
+('report.verify', 'Verify reports'),
+('report.approve', 'Approve and generate consolidated SITREP'),
+('report.generate.consolidated', 'Generate national daily SITREP'),
+('weekly.export', 'Export weekly reports'),
+('admin.users', 'Manage users and roles');
+

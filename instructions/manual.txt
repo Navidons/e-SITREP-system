@@ -1,0 +1,169 @@
+**✅ Refined Enterprise-Grade SITREP Automation System – Precise Alignment with Current Manual Process**
+
+Thank you for the clarification. I have deeply analyzed all provided artifacts (station samples, daily SITREP PDF, weekly memo, Busia report, weekly Excel, etc.). The system must **faithfully replicate and automate** the exact workflow:
+
+### Current Manual Process (to be automated)
+1. **Each Border Post** (60+) prepares and submits **its own daily report** by ~1400HRS (like Busia Cluster sample).
+2. **HQ** receives all reports → **compiles one consolidated Daily SITREP** in this exact format:
+   - **Station Name** (e.g., ELEGU BORDER POST)
+   - **ARRIVALS**: `235 ARRIVALS: 01 BI, 17 ER (01 FE), 70 KE (04 FE), ...`
+   - **DEPARTURES**: Similar compressed format with country 2/3-letter codes + (FE) for females where applicable.
+   - **ASYLUM SEEKERS** / other special categories.
+   - **REMARKS / INCIDENTS** section.
+3. **Weekly**: Aggregate daily data into Excel matrix (Stations as rows, Days as columns) + summary statistics.
+
+---
+
+### **Updated System Architecture (Enterprise, Secure, Scalable)**
+
+#### **1. Core Database Design (PostgreSQL) – Optimized for this exact flow**
+
+```sql
+-- 1. Master Stations
+CREATE TABLE border_stations (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(20) UNIQUE,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    cluster VARCHAR(50),
+    type VARCHAR(30), -- Land, Air, Lake, etc.
+    active BOOLEAN DEFAULT true
+);
+
+-- 2. Daily Station Report (one per station per day)
+CREATE TABLE station_daily_reports (
+    id SERIAL PRIMARY KEY,
+    station_id INTEGER REFERENCES border_stations,
+    report_date DATE NOT NULL,
+    submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    submitted_by VARCHAR(100),
+    status VARCHAR(20) DEFAULT 'submitted', -- submitted, reviewed, approved
+    staff_on_duty INTEGER,
+    medical_screening TEXT,
+    general_remarks TEXT,
+    urgent_matters TEXT,
+    UNIQUE(station_id, report_date)
+);
+
+-- 3. Movements (Normalized - best for aggregation & accuracy)
+CREATE TABLE movements (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER REFERENCES station_daily_reports,
+    movement_type VARCHAR(10) NOT NULL CHECK (movement_type IN ('arrival','departure')),
+    nationality_code VARCHAR(10),   -- BI, KE, SSD, UG, etc.
+    male INTEGER DEFAULT 0,
+    female INTEGER DEFAULT 0
+);
+
+-- 4. Special Categories
+CREATE TABLE special_categories (
+    report_id INTEGER REFERENCES station_daily_reports,
+    category VARCHAR(50), -- asylum_seekers, deported, offloaded, etc.
+    male INTEGER, female INTEGER, details TEXT
+);
+
+-- 5. Incidents / Remarks
+CREATE TABLE incidents (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER,
+    incident_type VARCHAR(100),
+    description TEXT,
+    passport_no VARCHAR(50),
+    action_taken TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Why this structure?**
+- Easy per-station data entry.
+- Extremely fast daily/weekly aggregations.
+- Maintains 100% fidelity to current output format.
+
+---
+
+#### **2. Web Portal Features (User Journey)**
+
+**Station Officer Portal** (PWA – works offline):
+- Select station (pre-filled).
+- Date auto-filled.
+- **Dynamic Arrivals/Departures Table** (add nationalities on the fly, auto-calculate totals).
+- Special categories & Incidents section (mirrors Busia sample).
+- Submit → System validates totals → Generates station-level preview in exact format.
+
+**HQ Dashboard**:
+- Inbox of pending station reports.
+- **One-Click "Generate Daily SITREP"** button → System compiles **all submitted stations** into **one professional tabular PDF** exactly like the sample.
+- Preview before dissemination.
+
+**Weekly Engine**:
+- Auto-aggregates 7 days.
+- Exports Excel in current format (stations × days).
+- Generates summary statistics (total arrivals, departures, top nationalities, etc.).
+
+---
+
+#### **3. Report Generation Logic (Core Innovation)**
+
+**Daily Consolidated SITREP Generation Algorithm**:
+
+For each station:
+- Group movements by `nationality_code` + `movement_type`.
+- Format string: `Total ARRIVALS: XX BI, YY KE (ZZ FE), ...`
+- Female notation only when >0.
+- Sort nationalities by volume or fixed standard order.
+- Append incidents, asylum seekers, remarks.
+
+**Tech Implementation**:
+- Backend service using **SQL materialized views** + Python (pandas or pure SQL) for formatting.
+- Template engine (Jinja2 or React-PDF) for final output.
+- Version-controlled report archive.
+
+---
+
+#### **4. Recommended Enterprise Tech Stack (Updated)**
+
+| Layer              | Technology                          | Reason |
+|--------------------|-------------------------------------|--------|
+| Frontend           | React + TypeScript + TanStack Table + Shadcn | Complex dynamic tables, PWA |
+| Backend            | **NestJS (TypeScript)** or FastAPI   | Type safety, excellent for gov systems |
+| Database           | **PostgreSQL 16** + TimescaleDB     | Time-series + strong analytics |
+| Auth               | Keycloak / Supabase Auth            | SSO ready with National ID |
+| File Export        | Puppeteer (PDF) + exceljs           | Pixel-perfect government format |
+| Offline            | RxDB or WatermelonDB + Sync         | Remote borders |
+| Deployment         | Docker + Kubernetes (on-prem)       | Enterprise DevOps |
+| Monitoring         | Prometheus + Grafana                | Professional |
+
+**Security**: Row-Level Security (RLS), full audit trail, data encryption, role-based access (Station → Cluster → HQ).
+
+---
+
+### **Implementation Roadmap for Prototype (Ready for 1st June 2026)**
+
+**Week 1 (MVP)**:
+1. Database schema + seed with sample data (Elegu, Busia, Entebbe, weekly Excel).
+2. Station data entry form.
+3. Daily report generator (single station + consolidated).
+
+**Week 2**:
+- Weekly aggregation + Excel export.
+- PDF generation matching exact style.
+- User roles & approval workflow.
+
+**Week 3**:
+- Polish UI, offline sync, demo data import, documentation.
+
+**Deliverables for Showcase**:
+- Live web demo (deploy on Render / Railway / local server).
+- Architecture diagram.
+- 5-minute video walkthrough.
+- Source code (GitHub).
+- User & Technical Manual.
+
+---
+
+**Would you like me to deliver right now**:
+
+1. **Full SQL schema** (ready to run).
+2. **Sample NestJS/FastAPI backend code** for report generation.
+3. **React data entry component** structure.
+4. **Excel/PDF export functions**.
+

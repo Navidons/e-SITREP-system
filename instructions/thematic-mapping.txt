@@ -1,0 +1,41 @@
+**✅ Thematic Area Mapping for e-SITREP System**
+
+Here is the **official recommendation** for your submission to the **Call to Ugandan Tech Innovators & Startups**:
+
+### **Thematic Areas: Select All That Apply**
+
+**Primary (Strongest Fit):**
+- **Justice, Law & Order**  
+- **Interoperability & Data Exchange**  
+- **Monitoring & Evaluation Systems**
+
+**Secondary (Good Fit):**
+- **Citizen Engagement & Service Delivery**
+
+---
+
+### **Detailed Justification**
+
+| Thematic Area                              | Relevance | Recommendation | Explanation |
+|-------------------------------------------|---------|--------------|-----------|
+| **Justice, Law & Order**                  | Very High | **Select** | Core function is border security, immigration control, tracking arrivals/departures, asylum seekers, deportations, and incidents. Directly supports law enforcement and national security. |
+| **Interoperability & Data Exchange**     | Very High | **Select** | System aggregates data from 60+ border stations into one consolidated SITREP. Designed for seamless data flow between stations and HQ, with future integration to PISCES, MIDAS, and other systems. |
+| **Monitoring & Evaluation Systems**       | Very High | **Select** | The entire system is built for real-time monitoring of border movements, generating daily & weekly reports, trends, and performance dashboards. |
+| **Citizen Engagement & Service Delivery** | Medium  | **Select** | Improves service delivery to travelers (Ugandans & foreigners) through faster, more accurate processing and reporting at borders. |
+| Digital Identity & Civil Registration     | Low     | Do not select | Not the main focus (though it could link later). |
+| Revenue & Financial Management            | Low     | Do not select | No direct revenue component. |
+| Health Information Systems                | Low     | Do not select | Medical screening is only a small remark. |
+| Education, Land, Agriculture, Labour, Pension etc. | None | Do not select | Not applicable. |
+
+---
+
+### **Recommended Submission Text**
+
+**Thematic Areas (Select all that apply):**
+- **Justice, Law & Order**
+- **Interoperability & Data Exchange**
+- **Monitoring & Evaluation Systems**
+- **Citizen Engagement & Service Delivery**
+
+**Other (specify):**  
+Border Management & Immigration Control Automation

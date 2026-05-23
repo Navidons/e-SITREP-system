@@ -1,0 +1,39 @@
+Uganda has very many border posts/stations through which people (nationals/foriegners/refugees/asylum seekers) enter and leave uganda.
+
+These on daily basis create and submit reports to headquarters of ministry of internal affairs, at hq the officers compile these reports into a single situation report showing arrivals and departures for every single station/border post eg:
+
+ELEGU BORDER POST - REPORT
+ARRIVALS	Male	Female	Total 
+	Burundi	01	00	01
+	Eritrea	16	01	17
+	Kenya	66	04	70
+	Rwanda	01	00	01
+	South Sudan	79	43	122
+	Sudan 	08	01	09
+	Uganda	10	04	14
+	Tanzania 	01	00	01
+	Total	182	53	235
+
+DEPARTURES
+	Burundi	04	00	04
+	Eritrea	08	01	09
+	Kenya	26	15	41
+	South Sudan	80	36	116
+	Sudan	08	00	08
+	Uganda	27	17	44
+	United States	01	00	01
+	Total	154	69	223
+
+	Asylum seekers	33	22	55
+
+HQ EXTRACT - ELEGU
+235 ARRIVALS: 01 BI, 17 ER (01 FE), 70 KE (04 FE), 01 RW, 122 SSD (43 FE), 09 SD (01 FE), 14 UG (04 FE), 01 TZ
+223 DEPARTURES: 04 BI, 09 ER (01 FE), 41 KE (15 FE), 116 SSD (36 FE), 08 SD, 44 UG (17 FE), 01 USA
+55 ASYLUM SEEKERS:
+
+
+Data received from over 60 border posts is compiled in the above format and all disminated into one situation report (strep) in a tabule form.
+
+The data from all daily situation reports is used to produce a comprehensive weekly situation report as excel document with all stations as rows and days of week as columns.
+
+This is usually done manually, I want to create an innovative system to automate these daily and weekly reports ie officers at stations can be entering this data from stations then the system is able to generated a daily situation report and weekly situation report.

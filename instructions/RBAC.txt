@@ -1,0 +1,146 @@
+**✅ Enterprise-Grade RBAC & User Management Design for Border SITREP Automation System**
+
+I have incorporated your latest requirements into the system architecture. The solution now features a **professional, secure, and auditable Role-Based Access Control (RBAC)** system with clear separation of duties across all levels.
+
+---
+
+### **1. User Roles & Permissions Matrix (Enterprise Standard)**
+
+| Role              | Level          | Key Permissions |
+|-------------------|----------------|------------------------------------------------|
+| **ADMIN**         | System         | • Full system access<br>• User & Role Management (create, assign, revoke)<br>• Configure stations, nationalities, system settings<br>• Export All Reports (Daily, Weekly, Custom)<br>• Audit Log Access<br>• Backup & Archive Management |
+| **HQ_AUTHORISER** | Headquarters   | • Authorise / Final Approve consolidated Daily SITREP<br>• View & Export All Stations + Consolidated Reports<br>• Generate & Disseminate Official SITREP |
+| **HQ_VERIFIER**   | Headquarters   | • Review & Verify station reports<br>• Flag issues for correction<br>• Generate Consolidated Daily SITREP (pre-approval) |
+| **HQ_REVIEWER**   | Headquarters   | • Review station submissions<br>• Add comments / request revisions |
+| **STATION_INPUTTER** | Border Post / Station | • Enter & Edit own station daily data<br>• Submit report<br>• Export own station daily report (PDF/Excel)<br>• View own station history only |
+| **CLUSTER_SUPERVISOR** (Optional) | Cluster Level | • Review multiple stations under cluster<br>• Approve before HQ submission |
+
+**Additional Features**:
+- Roles are **assignable per user** and can be combined (e.g., one user can be both HQ_REVIEWER + HQ_VERIFIER).
+- Admins can create custom role combinations.
+- **Least Privilege Principle** enforced via Row Level Security (RLS) in PostgreSQL.
+
+---
+
+### **2. Database Design – RBAC & Audit Ready (PostgreSQL)**
+
+```sql
+-- Users & Authentication
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100),
+    password_hash TEXT,
+    full_name VARCHAR(100),
+    station_id INTEGER REFERENCES border_stations,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Roles
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL, -- ADMIN, HQ_AUTHORISER, STATION_INPUTTER, etc.
+    description TEXT
+);
+
+-- User-Role Assignment
+CREATE TABLE user_roles (
+    user_id INTEGER REFERENCES users,
+    role_id INTEGER REFERENCES roles,
+    assigned_by INTEGER REFERENCES users,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, role_id)
+);
+
+-- Permissions (Fine-grained)
+CREATE TABLE permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE -- e.g., "station.input", "report.generate.consolidated", "weekly.export"
+);
+
+-- Role-Permission Mapping
+CREATE TABLE role_permissions (
+    role_id INTEGER REFERENCES roles,
+    permission_id INTEGER REFERENCES permissions,
+    PRIMARY KEY (role_id, permission_id)
+);
+
+-- Audit Trail (Enterprise Compliance)
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users,
+    action VARCHAR(100),
+    entity_type VARCHAR(50), -- 'station_daily_report', 'movement', etc.
+    entity_id INTEGER,
+    old_values JSONB,
+    new_values JSONB,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Row Level Security (RLS) Policies** (Critical for Security):
+- `STATION_INPUTTER` can only see and edit rows where `station_id = their_assigned_station`.
+- HQ roles can see all records.
+- All data changes are automatically logged.
+
+---
+
+### **3. Web Portal – Role-Based User Experience**
+
+**Dashboard Experience by Role**:
+
+- **STATION_INPUTTER**:
+  - Clean data entry form (Arrivals, Departures, Special Categories, Incidents).
+  - “Submit for Review” button.
+  - “Export My Station Daily Report” (exact format as current PDF).
+
+- **HQ_REVIEWER / HQ_VERIFIER**:
+  - Inbox with pending station reports.
+  - Review interface with comments.
+  - Mark as Verified.
+
+- **HQ_AUTHORISER**:
+  - One-click **“Generate Consolidated Daily SITREP”**.
+  - Final approval + dissemination (PDF ready for printing/email).
+
+- **ADMIN**:
+  - User Management Portal (assign stations + roles).
+  - System configuration.
+  - Full export center (Daily, Weekly, Historical).
+
+**Common Features Across Roles**:
+- Secure login (Session + JWT + refresh tokens).
+- Activity log per user.
+- Notification system (in-app + email) for submissions, approvals, rejections.
+
+---
+
+### **4. Approval Workflow (Secure & Traceable)**
+
+1. **Station Inputter** → Creates / Edits → **Submit**.
+2. **HQ Reviewer** → Reviews → **Request Changes** or **Mark Reviewed**.
+3. **HQ Verifier** → Verifies data accuracy → **Mark Verified**.
+4. **HQ Authoriser** → Approves → **Generate Official Consolidated SITREP**.
+5. System auto-archives approved report + notifies stakeholders.
+
+All steps are audited and visible in the system.
+
+---
+
+### **5. Tech Stack Reinforcement (Enterprise Grade)**
+
+- **Auth & RBAC**: **Keycloak** (recommended) or **NestJS + CASL** / **Supabase Auth** with custom RLS.
+- **Backend**: NestJS (TypeScript) – Guards + Interceptors for permission checks.
+- **Frontend**: React + TanStack Table + Role-based route guarding (Protected Routes).
+- **Database**: PostgreSQL with **Row Level Security + Audit Triggers**.
+- **DevOps**: Dockerized services, automated tests for permission enforcement, CI/CD pipeline.
+- **Security**: 
+  - JWT + Refresh tokens
+  - Rate limiting
+  - Session management
+  - Complete audit trail (immutable logs)
+  - Data encryption at rest & in transit
+
+---

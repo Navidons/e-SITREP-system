@@ -1,0 +1,137 @@
+**✅ Here is the Step-by-Step Development Plan for Cursor AI, Zed & Windsurf**
+
+---
+
+# **e-SITREP System – Development Plan**  
+**Next.js 15 + TypeScript (App Router)**
+
+### **Project Goal**
+Build a secure, enterprise-grade web application to automate border daily and weekly SITREP reporting.
+
+---
+
+### **Phase 0: Project Setup (Day 1)**
+
+1. Create Next.js 15 project
+   ```bash
+   npx create-next-app@latest e-sitrep --typescript --tailwind --eslint --app --yes
+   ```
+
+2. Install core dependencies:
+   ```bash
+   npm install prisma @prisma/client bcryptjs jsonwebtoken
+   npm install -D prisma
+   npm install @tanstack/react-table date-fns exceljs @react-pdf/renderer
+   npm install lucide-react
+   ```
+
+3. Initialize Prisma:
+   ```bash
+   npx prisma init
+   ```
+
+4. Set up folder structure (see below)
+
+---
+
+### **Phase 1: Database & Prisma Schema (High Priority)**
+
+**Task:** Create full database schema
+
+- Use the PostgreSQL schema I provided earlier
+- Convert it to **Prisma Schema** (`prisma/schema.prisma`)
+- Define all models: `BorderStation`, `User`, `Role`, `StationDailyReport`, `Movement`, `SpecialCategory`, `Incident`, `AuditLog`
+
+**Next Step after this:** Run `npx prisma db push` and `npx prisma generate`
+
+---
+
+### **Phase 2: Authentication & RBAC (Critical)**
+
+- Implement authentication using **NextAuth.js v5** (or Clerk)
+- Create Role-based middleware
+- Implement `getCurrentUser()` helper with roles
+- Row Level Security simulation (via Prisma + middleware)
+
+---
+
+### **Phase 3: Core Data Models & API Routes**
+
+Create these API routes (`app/api/`):
+
+- `/api/stations` – GET all stations
+- `/api/reports/daily` – CRUD for station reports
+- `/api/reports/consolidated` – Generate consolidated SITREP
+- `/api/weekly` – Generate weekly report
+- `/api/auth/[...nextauth]` – Auth
+
+---
+
+### **Phase 4: Main Station Data Entry Form (Most Important UI)**
+
+Build a powerful form using **TanStack Table**:
+
+- Dynamic table for Arrivals
+- Dynamic table for Departures
+- Nationality code autocomplete
+- Auto-calculate totals (Male + Female)
+- Special Categories section
+- Incidents section
+- Submit with status
+
+---
+
+### **Phase 5: HQ Dashboard & Workflow**
+
+- Pending reports table
+- Review / Verify / Approve actions
+- Consolidated SITREP preview + Generate button
+
+---
+
+### **Phase 6: Report Generation Engine**
+
+- Station-level PDF (exact current format)
+- Consolidated National Daily SITREP PDF
+- Weekly Excel export (using exceljs)
+
+---
+
+### **Recommended Project Structure**
+
+```
+e-sitrep/
+├── app/
+│   ├── (auth)/
+│   ├── (dashboard)/
+│   ├── api/
+│   ├── reports/
+│   └── layout.tsx
+├── components/
+│   ├── ui/              (shadcn)
+│   ├── forms/
+│   ├── tables/
+│   └── reports/
+├── lib/
+│   ├── prisma.ts
+│   ├── auth.ts
+│   └── utils.ts
+├── prisma/
+│   └── schema.prisma
+├── types/
+├── public/
+└── docs/
+```
+
+---
+
+### **Development Workflow with Cursor AI**
+
+1. Always start with clear instructions in Cursor.
+2. Work **one feature at a time**.
+3. After each major feature, ask Cursor to:
+   - Add proper TypeScript types
+   - Add error handling
+   - Add loading states
+   - Make it responsive
+

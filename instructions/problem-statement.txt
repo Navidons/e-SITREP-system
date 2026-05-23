@@ -1,0 +1,32 @@
+**✅ Here are the professionally written sections** for your **e-SITREP System** submission:
+
+---
+
+### **1. Problem Statement** (148 words)
+
+The National Citizenship and Immigration Control (NCIC) currently relies on a fully manual process for border situation reporting. Over 60 border posts across Uganda prepare and submit daily reports detailing arrivals, departures, asylum seekers, deportations, and security incidents. At Headquarters, officers manually compile these reports into a single consolidated Daily Situation Report (SITREP) and a comprehensive Weekly Report in Excel format.
+
+This manual process is extremely time-consuming, labour-intensive, and highly prone to errors in data aggregation, calculation, and formatting. It causes significant delays in information reaching senior management, reduces operational efficiency, and limits timely decision-making on national security, immigration management, and border control. 
+
+The lack of a centralized, automated system also results in poor audit trails, limited historical analysis, and difficulty in generating real-time insights from border movements.
+
+---
+
+### **2. Solution Description** (162 words)
+
+The **e-SITREP System** is a secure, scalable, and enterprise-grade web-based platform designed to fully automate the collection, review, approval, and dissemination of Daily and Weekly Border Situation Reports.
+
+Key features include:
+- Role-based data entry at border stations (Arrivals, Departures by nationality/gender, special categories, and incidents)
+- Multi-level HQ workflow (Review → Verify → Authorise)
+- One-click generation of Consolidated National Daily SITREP in the exact current format
+- Automatic Weekly Excel aggregation (stations × days with totals)
+- Offline capability for remote borders, full audit trail, and Row Level Security
+
+Built with modern technologies (React, NestJS, PostgreSQL), the system ensures data accuracy, speed, and accountability while maintaining strict compliance with government security standards. 
+
+It transforms a slow, error-prone manual process into a professional, real-time border monitoring and reporting platform.
+
+---
+
+### **3. Current Deployments or Pilots**

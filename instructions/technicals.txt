@@ -1,0 +1,28 @@
+**✅ Technical Details for e-SITREP System Submission**
+
+Here is the professionally written response ready for the submission form:
+
+---
+
+### **5. Technical Details**
+
+**Primary Programming Languages:**  
+**TypeScript** (Primary), JavaScript, SQL
+
+**Frontend Framework:**  
+**React.js** with TypeScript, TanStack Table, Shadcn/UI, and Progressive Web App (PWA) capabilities for offline functionality.
+
+**Backend Framework:**  
+**NestJS** (TypeScript) – Enterprise-grade, modular, and highly scalable Node.js framework.
+
+**Database System:**  
+**PostgreSQL 16** with Row Level Security (RLS), Materialized Views, and full audit trail capabilities for secure and efficient data management.
+
+**Hosting / Cloud:**  
+**Docker + Kubernetes** (On-premise ready at NCIC/MoICT Data Center) with hybrid cloud backup option. The system is designed for full government infrastructure deployment with high security and sovereignty compliance.
+
+**Version Control:**  
+**Git** with GitHub/GitLab (using GitFlow branching strategy)
+
+---
+

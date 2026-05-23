@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BorderStation {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @db.VarChar(20)
+  name      String   @unique @db.VarChar(100)
+  cluster   String?  @db.VarChar(50)
+  type      String?  @db.VarChar(30)
+  location  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users   User[]
+  reports StationDailyReport[]
+
+  @@map("border_stations")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(50)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int    @id @default(autoincrement())
+  name        String @unique @db.VarChar(100)
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int @map("role_id")
+  permissionId Int @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique @db.VarChar(50)
+  email        String?   @unique @db.VarChar(100)
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name") @db.VarChar(100)
+  stationId    Int?      @map("station_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  station       BorderStation?       @relation(fields: [stationId], references: [id])
+  userRoles     UserRole[]
+  reports       StationDailyReport[] @relation("SubmittedBy")
+  auditLogs     AuditLog[]
+  assignedRoles UserRole[]           @relation("AssignedBy")
+
+  @@map("users")
+}
+
+model UserRole {
+  userId     Int      @map("user_id")
+  roleId     Int      @map("role_id")
+  assignedBy Int?     @map("assigned_by")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assigner User? @relation("AssignedBy", fields: [assignedBy], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+enum ReportStatus {
+  draft
+  submitted
+  reviewed
+  verified
+  approved
+  rejected
+}
+
+model StationDailyReport {
+  id               Int          @id @default(autoincrement())
+  stationId        Int          @map("station_id")
+  reportDate       DateTime     @map("report_date") @db.Date
+  submittedById    Int?         @map("submitted_by")
+  submissionTime   DateTime?    @default(now()) @map("submission_time")
+  status           ReportStatus @default(draft)
+  staffOnDuty      Int          @default(0) @map("staff_on_duty")
+  medicalScreening String?      @map("medical_screening")
+  generalRemarks   String?      @map("general_remarks")
+  urgentMatters    String?      @map("urgent_matters")
+
+  station           BorderStation    @relation(fields: [stationId], references: [id])
+  submittedBy       User?            @relation("SubmittedBy", fields: [submittedById], references: [id])
+  movements         Movement[]
+  specialCategories SpecialCategory[]
+  incidents         Incident[]
+
+  @@unique([stationId, reportDate])
+  @@index([status])
+  @@map("station_daily_reports")
+}
+
+enum MovementType {
+  arrival
+  departure
+}
+
+model Movement {
+  id               Int          @id @default(autoincrement())
+  reportId         Int          @map("report_id")
+  movementType     MovementType @map("movement_type")
+  nationalityCode  String       @map("nationality_code") @db.VarChar(10)
+  male             Int          @default(0)
+  female           Int          @default(0)
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  report StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@map("movements")
+}
+
+model SpecialCategory {
+  id        Int      @id @default(autoincrement())
+  reportId  Int      @map("report_id")
+  category  String   @db.VarChar(50)
+  male      Int      @default(0)
+  female    Int      @default(0)
+  details   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  report StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("special_categories")
+}
+
+model Incident {
+  id           Int      @id @default(autoincrement())
+  reportId     Int      @map("report_id")
+  incidentType String?  @map("incident_type") @db.VarChar(100)
+  description  String
+  passportNo   String?  @map("passport_no") @db.VarChar(50)
+  personName   String?  @map("person_name") @db.VarChar(100)
+  actionTaken  String?  @map("action_taken")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  report StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("incidents")
+}
+
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     Int?     @map("user_id")
+  action     String   @db.VarChar(50)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   Int?     @map("entity_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

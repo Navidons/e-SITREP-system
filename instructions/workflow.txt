@@ -1,0 +1,258 @@
+**Border Situation Report (SITREP) Automation System**  
+**Comprehensive System Documentation**  
+**Enterprise-Grade Solution for National Citizenship and Immigration Control (NCIC)**  
+
+**Version:** 1.0  
+**Date:** May 21, 2026  
+**Prepared for:** Ministry of Internal Affairs – Call to Ugandan Tech Innovators & Startups  
+**Author:** SSEBBOWA RICHARD  
+
+---
+
+### 1. Executive Summary
+
+The **SITREP Automation System** is a secure, scalable, and professional web-based enterprise platform designed to fully automate the creation, submission, review, approval, and dissemination of **Daily and Weekly Situation Reports** from over 60 border posts in Uganda.
+
+The system eliminates manual compilation errors, reduces turnaround time from hours to minutes, ensures data integrity, and provides real-time visibility for decision-makers while maintaining strict compliance with government data classification (RESTRICTED).
+
+**Key Outcomes:**
+- Accurate, consistent, and timely SITREPs
+- Strong auditability and accountability
+- Role-based access control across Stations, HQ, and Admin levels
+- Seamless export of station-level, consolidated daily, and weekly reports
+- Foundation for future integration with PISCES, MIDAS, and other NCIC systems
+
+---
+
+### 2. Business Requirements & Current Process
+
+**Current Manual Process:**
+- Each border post submits a daily report (e.g., Busia format) by 1400HRS.
+- HQ manually compiles all reports into one consolidated tabular Daily SITREP.
+- Weekly reports are manually aggregated in Excel (stations × days).
+
+**Automated Requirements:**
+- Station officers (Inputters) enter data for their station only.
+- Multi-level review workflow (Reviewer → Verifier → Authoriser).
+- One-click generation of:
+  - Individual Station Daily Report
+  - Consolidated National Daily SITREP (exact current format)
+  - Weekly Excel Summary + Totals
+- Full audit trail and role-based permissions.
+
+---
+
+### 3. System Architecture (High-Level)
+
+**Architecture Style:** Microservices-ready, API-first, Layered Architecture
+
+**Core Layers:**
+- **Presentation Layer**: Responsive Web Portal (PWA)
+- **Application Layer**: Business Logic & Workflow Engine
+- **Data Layer**: PostgreSQL with Row Level Security
+- **Integration Layer**: Future APIs for PISCES/MIDAS
+- **Reporting Layer**: PDF + Excel generation engine
+- **Security Layer**: Authentication, Authorization, Audit
+
+**Deployment Model:** Containerized (Docker), On-premise first with hybrid cloud backup.
+
+---
+
+### 4. Database Design (PostgreSQL)
+
+#### Core Tables
+
+```sql
+-- Master Data
+CREATE TABLE border_stations (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(20) UNIQUE,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    cluster VARCHAR(50),
+    type VARCHAR(30),
+    active BOOLEAN DEFAULT true
+);
+
+-- Users & RBAC
+CREATE TABLE users (...);           -- See RBAC section
+CREATE TABLE roles (...);
+CREATE TABLE user_roles (...);
+CREATE TABLE permissions (...);
+CREATE TABLE role_permissions (...);
+
+-- Daily Reports
+CREATE TABLE station_daily_reports (
+    id SERIAL PRIMARY KEY,
+    station_id INTEGER REFERENCES border_stations,
+    report_date DATE NOT NULL,
+    submitted_by INTEGER REFERENCES users,
+    submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'draft', -- draft, submitted, reviewed, verified, approved, rejected
+    staff_on_duty INTEGER,
+    medical_screening TEXT,
+    general_remarks TEXT,
+    urgent_matters TEXT,
+    UNIQUE(station_id, report_date)
+);
+
+-- Movements (Arrivals & Departures)
+CREATE TABLE movements (
+    id SERIAL PRIMARY KEY,
+    report_id INTEGER REFERENCES station_daily_reports,
+    movement_type VARCHAR(10) CHECK (movement_type IN ('arrival', 'departure')),
+    nationality_code VARCHAR(10),
+    male INTEGER DEFAULT 0,
+    female INTEGER DEFAULT 0,
+    total INTEGER GENERATED ALWAYS AS (male + female) STORED
+);
+
+-- Special Categories & Incidents
+CREATE TABLE special_categories (...);
+CREATE TABLE incidents (...);
+
+-- Audit Logs
+CREATE TABLE audit_logs (...);
+```
+
+**Key Features:**
+- Materialized views for fast aggregation
+- Row Level Security (RLS) policies
+- Triggers for automatic audit logging
+
+---
+
+### 5. User Roles & RBAC (Enterprise Standard)
+
+| Role                    | Level               | Key Permissions |
+|-------------------------|---------------------|-----------------|
+| **ADMIN**               | System              | User/Role management, full exports, system config |
+| **HQ_AUTHORISER**       | Headquarters        | Final approval, generate & disseminate consolidated SITREP |
+| **HQ_VERIFIER**         | Headquarters        | Data verification |
+| **HQ_REVIEWER**         | Headquarters        | Review & comment |
+| **CLUSTER_SUPERVISOR**  | Cluster             | Review stations under cluster |
+| **STATION_INPUTTER**    | Border Post         | Data entry & own station report export only |
+
+**Implementation:**
+- Fine-grained permissions stored in database
+- JWT-based authentication with role claims
+- PostgreSQL Row Level Security (RLS) for data isolation
+- Admin portal for role assignment
+
+---
+
+### 6. Key Features & Modules
+
+#### 6.1 Station Portal (Inputter)
+- Dynamic Arrivals/Departures entry with auto-totals
+- Nationality code autocomplete (BI, KE, SSD, UG, etc.)
+- Special categories (Asylum Seekers, Deportees, etc.)
+- Incidents & Remarks
+- Offline data capture with sync
+- Export own station daily report (PDF)
+
+#### 6.2 HQ Portal
+- Dashboard with pending submissions
+- Review, verify, and approval workflow
+- **Generate Consolidated Daily SITREP** (one click)
+- Search & filter historical reports
+
+#### 6.3 Reporting Engine
+- **Daily Station Report**: Exact format as current PDFs
+- **Consolidated National SITREP**: Tabular view with all stations
+- **Weekly Report**: Excel matrix (Stations × Days) + Summary statistics
+- PDF generation matching government styling
+
+#### 6.4 Admin Module
+- User & Role Management
+- Station configuration
+- System-wide exports & archives
+- Audit log viewer
+
+---
+
+### 7. Business Workflow
+
+1. **Data Entry** → Station Inputter creates/submits report
+2. **Review** → HQ Reviewer checks and comments
+3. **Verification** → HQ Verifier validates numbers
+4. **Approval** → HQ Authoriser approves
+5. **Generation** → System creates official Consolidated SITREP
+6. **Dissemination** → PDF ready for distribution
+7. **Weekly Roll-up** → Automatic aggregation every Sunday/Monday
+
+All transitions are logged in audit trail.
+
+---
+
+### 8. Technology Stack (Enterprise Grade)
+
+| Layer              | Technology                              | Justification |
+|--------------------|-----------------------------------------|-------------|
+| Frontend           | React.js + TypeScript + TanStack Table + Shadcn/UI + PWA | Rich tables, offline, responsive |
+| Backend            | NestJS (TypeScript)                     | Enterprise structure, modularity |
+| Database           | PostgreSQL 16 + Row Level Security      | Security, analytics, reliability |
+| Auth & RBAC        | Keycloak or NestJS + JWT + CASL         | SSO ready, robust authorization |
+| Reporting          | Puppeteer (PDF) + exceljs               | Pixel-perfect outputs |
+| Offline Sync       | RxDB / WatermelonDB                     | Remote border support |
+| Containerization   | Docker + Docker Compose                 | Consistent environments |
+| Orchestration      | Kubernetes (on-prem ready)              | Scalability |
+| Monitoring         | Prometheus + Grafana + ELK Stack        | DevOps visibility |
+| CI/CD              | GitHub Actions                          | Automated pipelines |
+
+---
+
+### 9. Security & Compliance
+
+- **Authentication**: Multi-factor ready (JWT + Refresh tokens)
+- **Authorization**: RBAC + RLS
+- **Data Protection**: Encryption at rest & transit (TLS 1.3)
+- **Auditability**: Immutable audit logs
+- **Compliance**: Uganda Data Protection and Privacy Act, Government security standards
+- **Best Practices**: OWASP Top 10, Least Privilege, Zero Trust principles
+
+---
+
+### 10. Deployment & DevOps
+
+**Recommended Deployment:**
+- Primary: On-premise servers at NCIC/MoICT Data Center
+- Backup: Secure hybrid cloud
+- CI/CD: Fully automated build → test → deploy pipeline
+- Monitoring & Alerting: Real-time dashboards
+- Backup Strategy: Daily + Point-in-Time Recovery
+
+**Scalability:** Horizontal scaling, caching (Redis), read replicas for analytics.
+
+---
+
+### 11. Implementation Roadmap (MVP for Showcase)
+
+**Phase 1 – MVP (By 1st June 2026)**
+- Core DB + RBAC
+- Station data entry
+- Consolidated Daily SITREP generation
+- Basic exports (PDF + Excel)
+
+**Phase 2**
+- Full workflow, offline capability, advanced analytics
+
+**Phase 3**
+- PISCES/MIDAS integration, AI anomaly detection, mobile app
+
+---
+
+### 12. Appendices
+
+- **Appendix A**: Sample Data Model (ER Diagram – available in repo)
+- **Appendix B**: API Specifications (OpenAPI)
+- **Appendix C**: User Manual (Station & HQ)
+- **Appendix D**: Security Whitepaper
+- **Appendix E**: Demo Data (Elegu, Busia, Entebbe samples)
+
+---
+
+**This documentation serves as the foundational reference for development, deployment, and maintenance of the SITREP Automation System.**
+
+The system is designed to be **secure, scalable, maintainable**, and fully aligned with the Ministry’s digital transformation goals under the **Government Systems Prototype Showcase**.
+
+---

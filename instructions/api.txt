@@ -1,0 +1,214 @@
+**✅ Comprehensive Document Suite for SITREP Automation System**  
+**Enterprise-Grade Border Management Solution**
+
+Below is a complete set of professional documents to support **system development at all levels**, submission for the **Government Systems Prototype Showcase**, stakeholder presentations, and future maintenance.
+
+---
+
+### **Document 1: Executive Summary & Project Pitch (1-Page Version)**
+
+**Project Title:** Border SITREP Automation System (BSAS)
+
+**Overview**  
+The BSAS is a secure, scalable web-based platform that automates the daily and weekly Situation Reports (SITREPs) for over 60 border posts under the National Citizenship and Immigration Control (NCIC), Ministry of Internal Affairs.
+
+**Problem Statement**  
+Currently, officers at each border post manually prepare daily reports which are sent to Headquarters. HQ staff then spend significant time manually compiling them into one consolidated SITREP and weekly Excel reports. This process is time-consuming, error-prone, and delays critical decision-making.
+
+**Proposed Solution**  
+A role-based web portal where:
+- Station officers enter data easily.
+- HQ teams review, verify, and approve.
+- The system automatically generates professional Daily Consolidated SITREPs and Weekly Reports.
+
+**Key Benefits**  
+- Reduces report compilation time from hours to minutes  
+- Eliminates manual errors  
+- Full audit trail and accountability  
+- Offline capability for remote borders  
+- Secure, compliant with government standards  
+
+**Alignment with Government Priorities**  
+Interoperability & Data Exchange, Monitoring & Evaluation Systems, Justice Law & Order, Digital Transformation.
+
+**Prototype Readiness**  
+MVP ready by 1st June 2026 for the Showcase on 25th June 2026.
+
+---
+
+### **Document 2: System Requirements Specification (SRS)**
+
+**1. Functional Requirements**
+
+**FR-01: User Management**  
+- Admin can create users and assign roles (ADMIN, HQ_AUTHORISER, HQ_VERIFIER, HQ_REVIEWER, STATION_INPUTTER, CLUSTER_SUPERVISOR)
+
+**FR-02: Station Data Entry**  
+- STATION_INPUTTER can enter arrivals, departures (by nationality code, male/female), special categories, incidents, remarks  
+- Auto-calculation of totals  
+- Offline mode with synchronization
+
+**FR-03: Workflow & Approval**  
+- Multi-level approval: Submitted → Reviewed → Verified → Approved
+
+**FR-04: Report Generation**  
+- Generate Individual Station Daily Report (PDF)  
+- Generate Consolidated National Daily SITREP (exact current format)  
+- Generate Weekly Excel Summary (Stations × Days + Totals)
+
+**FR-05: Dashboard & Analytics**  
+- Role-based dashboards  
+- Historical search and trends
+
+**2. Non-Functional Requirements**  
+- Security: RBAC + Row Level Security + Audit Trail  
+- Performance: Support 60+ concurrent stations  
+- Usability: Intuitive interface, mobile responsive, PWA  
+- Availability: 99% uptime, offline support  
+- Scalability: Horizontal scaling  
+- Compliance: Uganda Data Protection Act
+
+---
+
+### **Document 3: Software Architecture Document (High-Level Design)**
+
+**Architecture Style:** Layered + API-First (Microservices-ready)
+
+**Layers:**
+1. **Presentation Layer** – React.js + TypeScript + PWA
+2. **Business Logic Layer** – NestJS (TypeScript)
+3. **Data Access Layer** – PostgreSQL with Prisma/TypeORM
+4. **Reporting Layer** – Puppeteer (PDF) + exceljs
+5. **Integration Layer** – REST APIs (future PISCES/MIDAS)
+6. **Security Layer** – Keycloak / JWT + PostgreSQL RLS
+
+**Data Flow (Daily):**
+Station Input → Validation → Submit → HQ Review → Approval → Auto Generate Consolidated SITREP → Archive & Notify
+
+**Deployment Architecture:**
+- Docker containers
+- On-premise Kubernetes cluster (primary)
+- Hybrid backup
+
+---
+
+### **Document 4: Database Design Document**
+
+**Key Tables (PostgreSQL)**
+
+- `border_stations` (id, code, name, cluster, type)
+- `users` (id, username, full_name, station_id, is_active)
+- `roles`, `permissions`, `user_roles`, `role_permissions`
+- `station_daily_reports` (id, station_id, report_date, status, submitted_by…)
+- `movements` (report_id, movement_type, nationality_code, male, female)
+- `special_categories`, `incidents`
+- `audit_logs`
+
+**Important Features:**
+- Generated columns for totals
+- Materialized views for weekly aggregation
+- Row Level Security policies per role
+- Audit triggers
+
+---
+
+### **Document 5: API Specification (OpenAPI Style Summary)**
+
+**Key Endpoints:**
+
+- `POST /auth/login`
+- `POST /reports/station` – Create station daily report
+- `GET /reports/pending` – HQ view pending reports
+- `POST /reports/:id/review`
+- `POST /reports/generate/consolidated?date=YYYY-MM-DD`
+- `GET /exports/station/:id/pdf`
+- `GET /exports/weekly?from=...&to=...`
+
+All endpoints secured with JWT and role-based guards.
+
+---
+
+### **Document 6: User Manual (Role-Based)**
+
+**For Station Inputters:**
+1. Login → Select your station
+2. Fill Arrivals / Departures table (add nationalities easily)
+3. Enter special categories and incidents
+4. Submit report
+
+**For HQ Users:**
+- Review pending reports
+- Use “Generate Consolidated SITREP” button after approval
+
+**For Admins:**
+- Manage users and roles
+- Configure stations and nationalities
+
+---
+
+### **Document 7: Presentation Deck Outline (For Showcase)**
+
+**Slide 1:** Title – Border SITREP Automation System  
+**Slide 2:** The Current Challenge (Old System)  
+**Slide 3:** Our Solution – 360° View  
+**Slide 4:** System Architecture (Simple Diagram)  
+**Slide 5:** User Roles & Workflow  
+**Slide 6:** Demo Screenshots / Live Demo  
+**Slide 7:** Key Benefits & Impact  
+**Slide 8:** Technology Stack (Enterprise Grade)  
+**Slide 9:** Implementation Roadmap & Timeline  
+**Slide 10:** Call to Action – Ready for Partnership
+
+*(I can generate full speaker notes or detailed slides if needed)*
+
+---
+
+### **Document 8: Development & Implementation Roadmap**
+
+**Phase 1: MVP (by 1 June 2026)**
+- Database + RBAC
+- Station data entry
+- Consolidated report generation
+- Basic PDF/Excel export
+
+**Phase 2: Enhanced (July 2026)**
+- Full workflow + notifications
+- Offline sync
+- Advanced analytics
+
+**Phase 3: Production**
+- Integration with existing systems
+- Mobile app
+- AI features (anomaly detection)
+
+**Tech Stack (Final Recommended):**
+- Frontend: React + TypeScript + TanStack Table
+- Backend: NestJS
+- Database: PostgreSQL
+- Others: Docker, Keycloak, Puppeteer
+
+---
+
+### **Document 9: Security & Compliance Whitepaper**
+
+- Authentication & Authorization
+- Data Encryption
+- Audit Trail
+- Row Level Security
+- Backup & Disaster Recovery
+- Compliance with National Standards
+
+---
+
+### **Document 10: Deployment Guide**
+
+**Local Development:**
+```bash
+docker-compose up -d
+```
+
+**Production:**
+- On-premise servers at NCIC
+- Kubernetes deployment
+- Monitoring with Grafana
+
