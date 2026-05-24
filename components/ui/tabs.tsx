@@ -69,7 +69,12 @@ export function TabPanel({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-b-lg border border-t-0 border-zinc-300 bg-white p-4 shadow-sm", className)}>
+    <div
+      className={cn(
+        "rounded-b-lg border border-t-0 border-zinc-300 bg-white p-4 shadow-sm",
+        className,
+      )}
+    >
       {children}
     </div>
   );

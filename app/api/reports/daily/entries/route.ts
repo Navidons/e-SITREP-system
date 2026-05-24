@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth-helpers";
 import { can, PERMISSIONS } from "@/lib/rbac";
-import { addDayEntry, getDailyReportWithSummary } from "@/lib/reports/entry-service";
+import { addDayEntry, getDayRecord } from "@/lib/reports/daily-day";
 import type { DayEntryPayload } from "@/types/reports";
 
 export async function POST(request: Request) {
@@ -29,6 +29,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const report = await getDailyReportWithSummary(user.stationId, body.reportDate);
+  const report = await getDayRecord(user.stationId, body.reportDate);
   return NextResponse.json(report);
 }

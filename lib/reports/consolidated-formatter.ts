@@ -1,16 +1,7 @@
-import { NATIONALITY_CODES } from "@/lib/constants/nationalities";
-
-const CODE_ORDER = new Map(
-  NATIONALITY_CODES.map((n, i) => [n.code, i]),
-);
+import { sortNationalityCodesForOutput } from "@/lib/countries/service";
 
 function sortNationalityCodes(codes: string[]): string[] {
-  return [...codes].sort((a, b) => {
-    const ai = CODE_ORDER.get(a as (typeof NATIONALITY_CODES)[number]["code"]) ?? 999;
-    const bi = CODE_ORDER.get(b as (typeof NATIONALITY_CODES)[number]["code"]) ?? 999;
-    if (ai !== bi) return ai - bi;
-    return a.localeCompare(b);
-  });
+  return sortNationalityCodesForOutput(codes);
 }
 
 export type MovementRow = {
@@ -114,11 +105,14 @@ export function formatStationConsolidated(input: StationConsolidatedInput): stri
 }
 
 /** Validate formatter against Elegu sample from instructions/support-files/strep system.txt */
-export function formatEleguSampleCheck(): {
+export async function formatEleguSampleCheck(): Promise<{
   arrivals: string;
   departures: string;
   asylum: string;
-} {
+}> {
+  const { loadCountries } = await import("@/lib/countries/service");
+  await loadCountries();
+
   const eleguMovements: MovementRow[] = [
     { movementType: "arrival", nationalityCode: "BI", male: 1, female: 0 },
     { movementType: "arrival", nationalityCode: "ER", male: 16, female: 1 },

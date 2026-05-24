@@ -63,19 +63,19 @@ model User {
   email        String?   @unique @db.VarChar(100)
   passwordHash String    @map("password_hash")
   fullName     String    @map("full_name") @db.VarChar(100)
-  stationId    Int?      @map("station_id")
-  isActive     Boolean   @default(true) @map("is_active")
-  lastLogin    DateTime? @map("last_login")
+  stationId           Int?               @map("station_id")
+  countryCodeFormat   CountryCodeFormat  @default(alpha2) @map("country_code_format")
+  isActive            Boolean            @default(true) @map("is_active")
+  lastLogin           DateTime?          @map("last_login")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   station       BorderStation?       @relation(fields: [stationId], references: [id])
-  userRoles       UserRole[]
-  reports         StationDailyReport[] @relation("SubmittedBy")
-  movementEntries Movement[]           @relation("MovementEnteredBy")
-  specialEntries  SpecialCategory[]    @relation("SpecialEnteredBy")
-  auditLogs       AuditLog[]
-  assignedRoles   UserRole[]           @relation("AssignedBy")
+  userRoles     UserRole[]
+  reports       StationDailyReport[] @relation("SubmittedBy")
+  dailyEntries  DailyEntry[]
+  auditLogs     AuditLog[]
+  assignedRoles UserRole[]           @relation("AssignedBy")
 
   @@map("users")
 }
@@ -103,71 +103,62 @@ enum ReportStatus {
   rejected
 }
 
+enum CountryCodeFormat {
+  alpha2
+  alpha3
+}
+
+/// One record per station per calendar day — all entries for that day link here.
 model StationDailyReport {
   id               Int          @id @default(autoincrement())
   stationId        Int          @map("station_id")
   reportDate       DateTime     @map("report_date") @db.Date
   submittedById    Int?         @map("submitted_by")
-  submissionTime   DateTime?    @default(now()) @map("submission_time")
+  submissionTime   DateTime?    @map("submission_time")
   status           ReportStatus @default(draft)
   staffOnDuty      Int          @default(0) @map("staff_on_duty")
   medicalScreening String?      @map("medical_screening")
   generalRemarks   String?      @map("general_remarks")
   urgentMatters    String?      @map("urgent_matters")
+  openedAt         DateTime     @default(now()) @map("opened_at")
 
-  station           BorderStation    @relation(fields: [stationId], references: [id])
-  submittedBy       User?            @relation("SubmittedBy", fields: [submittedById], references: [id])
-  movements         Movement[]
-  specialCategories SpecialCategory[]
-  incidents         Incident[]
+  station     BorderStation @relation(fields: [stationId], references: [id])
+  submittedBy User?         @relation("SubmittedBy", fields: [submittedById], references: [id])
+  entries     DailyEntry[]
+  incidents   Incident[]
 
   @@unique([stationId, reportDate])
+  @@index([stationId, reportDate])
   @@index([status])
   @@map("station_daily_reports")
 }
 
-enum MovementType {
+enum DailyEntryType {
   arrival
   departure
+  asylum_seeker
+  refugee
 }
 
-model Movement {
-  id               Int          @id @default(autoincrement())
-  reportId         Int          @map("report_id")
-  movementType     MovementType @map("movement_type")
-  nationalityCode  String       @map("nationality_code") @db.VarChar(10)
-  male             Int          @default(0)
-  female           Int          @default(0)
-  recordedAt       DateTime     @default(now()) @map("recorded_at")
-  enteredById      Int?         @map("entered_by")
-  notes            String?
-  createdAt        DateTime     @default(now()) @map("created_at")
-
-  report    StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  enteredBy User?              @relation("MovementEnteredBy", fields: [enteredById], references: [id])
-
-  @@index([reportId, recordedAt])
-  @@map("movements")
-}
-
-model SpecialCategory {
-  id              Int      @id @default(autoincrement())
-  reportId        Int      @map("report_id")
-  category        String   @db.VarChar(50)
-  nationalityCode String?  @map("nationality_code") @db.VarChar(10)
-  male            Int      @default(0)
-  female          Int      @default(0)
-  recordedAt      DateTime @default(now()) @map("recorded_at")
-  enteredById     Int?     @map("entered_by")
-  details         String?
+/// Each log batch during the day (added at different times).
+model DailyEntry {
+  id              Int            @id @default(autoincrement())
+  reportId        Int            @map("report_id")
+  entryType       DailyEntryType @map("entry_type")
+  nationalityCode String?        @map("nationality_code") @db.VarChar(10)
+  male            Int            @default(0)
+  female          Int            @default(0)
+  recordedAt      DateTime       @default(now()) @map("recorded_at")
+  enteredById     Int?           @map("entered_by")
   notes           String?
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
 
   report    StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  enteredBy User?              @relation("SpecialEnteredBy", fields: [enteredById], references: [id])
+  enteredBy User?              @relation(fields: [enteredById], references: [id])
 
   @@index([reportId, recordedAt])
-  @@map("special_categories")
+  @@index([reportId, entryType])
+  @@map("daily_entries")
 }
 
 model Incident {

@@ -1,22 +1,22 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { canAccessStation, can, PERMISSIONS } from "@/lib/rbac";
-import { getDailyReportWithSummary, ensureDailyReport } from "@/lib/reports/entry-service";
-import { updateReportRemarks } from "@/lib/reports/report-service";
+import {
+  getDayRecord,
+  ensureDayRecord,
+  updateDayRemarks,
+  todayDateString,
+} from "@/lib/reports/daily-day";
 import { parseReportDate } from "@/lib/utils";
-import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
 
   const { searchParams } = new URL(request.url);
-  const date = searchParams.get("date");
+  const date = searchParams.get("date") ?? todayDateString();
   const stationIdParam = searchParams.get("stationId");
-
-  if (!date) {
-    return NextResponse.json({ error: "date is required" }, { status: 400 });
-  }
 
   const stationId = stationIdParam
     ? Number(stationIdParam)
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const report = await getDailyReportWithSummary(stationId, date);
+  const report = await getDayRecord(stationId, date);
 
   if (!report) {
     const station = await prisma.borderStation.findUnique({
@@ -35,9 +35,10 @@ export async function GET(request: Request) {
     return NextResponse.json({
       reportDate: date,
       status: "draft",
-      movements: [],
-      specialCategories: [],
+      entries: [],
+      entryCount: 0,
       station,
+      isToday: date === todayDateString(),
       summary: {
         arrivals: { rows: [], male: 0, female: 0, total: 0 },
         departures: { rows: [], male: 0, female: 0, total: 0 },
@@ -46,7 +47,10 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json(report);
+  return NextResponse.json({
+    ...report,
+    isToday: date === todayDateString(),
+  });
 }
 
 export async function PATCH(request: Request) {
@@ -62,13 +66,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "reportDate required" }, { status: 400 });
   }
 
-  const report = await ensureDailyReport(
+  const report = await ensureDayRecord(
     user.stationId,
     Number(user.id),
     reportDate,
   );
 
-  const updated = await updateReportRemarks(report.id, body);
-  const full = await getDailyReportWithSummary(user.stationId, reportDate);
-  return NextResponse.json(full ?? updated);
+  await updateDayRemarks(report.id, body);
+  const full = await getDayRecord(user.stationId, reportDate);
+  return NextResponse.json(full);
 }

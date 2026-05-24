@@ -7,6 +7,7 @@ export default async function HqInboxPage() {
     "HQ_VERIFIER",
     "HQ_AUTHORISER",
     "ADMIN",
+    "CLUSTER_SUPERVISOR",
   ]);
   return (
     <DashboardShell title="HQ inbox — pending reports">

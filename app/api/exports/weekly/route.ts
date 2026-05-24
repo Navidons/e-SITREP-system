@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-helpers";
 import { PERMISSIONS } from "@/lib/rbac";
-import { ReportStatus, MovementType } from "@prisma/client";
+import { ReportStatus, DailyEntryType } from "@prisma/client";
 import { parseReportDate } from "@/lib/utils";
 
 export async function GET(request: Request) {
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       reportDate: { gte: fromDate, lte: toDate },
       status: ReportStatus.approved,
     },
-    include: { movements: true, station: true },
+    include: { entries: true, station: true },
   });
 
   const dates: string[] = [];
@@ -44,9 +44,9 @@ export async function GET(request: Request) {
   const arrivalTotals = new Map<string, number>();
   for (const r of reports) {
     const key = `${r.stationId}:${r.reportDate.toISOString().slice(0, 10)}`;
-    const total = r.movements
-      .filter((m) => m.movementType === MovementType.arrival)
-      .reduce((s, m) => s + m.male + m.female, 0);
+    const total = r.entries
+      .filter((e) => e.entryType === DailyEntryType.arrival)
+      .reduce((s, e) => s + e.male + e.female, 0);
     arrivalTotals.set(key, total);
   }
 
@@ -70,8 +70,7 @@ export async function GET(request: Request) {
   }
 
   sheet.addRow([]);
-  const footer = ["GRAND TOTAL", "", ...dates.map(() => ""), grandTotal];
-  sheet.addRow(footer);
+  sheet.addRow(["GRAND TOTAL", "", ...dates.map(() => ""), grandTotal]);
 
   const buffer = await workbook.xlsx.writeBuffer();
   return new NextResponse(buffer, {

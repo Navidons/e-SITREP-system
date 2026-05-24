@@ -1,11 +1,11 @@
 import { DashboardShell, ensureRole } from "@/components/layout/DashboardShell";
-import { StationDayEntry } from "@/components/forms/StationDayEntry";
+import { StationInputterApp } from "@/components/station/StationInputterApp";
 
 export default async function StationPage() {
-  await ensureRole(["STATION_INPUTTER", "ADMIN"]);
+  await ensureRole(["STATION_INPUTTER", "CLUSTER_SUPERVISOR", "ADMIN"]);
   return (
-    <DashboardShell title="Station daily entry">
-      <StationDayEntry />
+    <DashboardShell title="Station — daily SITREP">
+      <StationInputterApp />
     </DashboardShell>
   );
 }

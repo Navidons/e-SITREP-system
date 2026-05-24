@@ -9,6 +9,7 @@ import {
 } from "@/lib/reports/consolidated-formatter";
 import { reportToConsolidatedInput } from "@/lib/reports/report-service";
 import { reportInclude } from "@/lib/reports/report-service";
+import { loadCountries } from "@/lib/countries/service";
 
 export async function POST(request: Request) {
   const user = await requirePermission(
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
   if (!date) {
     return NextResponse.json({ error: "date is required" }, { status: 400 });
   }
+
+  await loadCountries();
 
   const reports = await prisma.stationDailyReport.findMany({
     where: {

@@ -1,4 +1,4 @@
-import { PrismaClient, MovementType, ReportStatus } from "@prisma/client";
+import { PrismaClient, DailyEntryType, ReportStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { ROLE_PERMISSIONS } from "../lib/rbac";
 
@@ -32,27 +32,6 @@ const PERMISSION_LIST = [
 ];
 
 const DEMO_PASSWORD = "Demo@2026";
-
-const ELEGU_ARRIVALS = [
-  ["BI", 1, 0],
-  ["ER", 16, 1],
-  ["KE", 66, 4],
-  ["RW", 1, 0],
-  ["SSD", 79, 43],
-  ["SD", 8, 1],
-  ["UG", 10, 4],
-  ["TZ", 1, 0],
-] as const;
-
-const ELEGU_DEPARTURES = [
-  ["BI", 4, 0],
-  ["ER", 8, 1],
-  ["KE", 26, 15],
-  ["SSD", 80, 36],
-  ["SD", 8, 0],
-  ["UG", 27, 17],
-  ["USA", 1, 0],
-] as const;
 
 async function main() {
   console.log("Seeding e-SITREP database...");
@@ -165,97 +144,58 @@ async function main() {
     },
   });
 
-  await prisma.movement.deleteMany({ where: { reportId: eleguReport.id } });
-  await prisma.specialCategory.deleteMany({ where: { reportId: eleguReport.id } });
+  await prisma.dailyEntry.deleteMany({ where: { reportId: eleguReport.id } });
 
   const dayBase = new Date("2026-05-08T00:00:00.000Z");
   const at = (hour: number, min = 0) =>
     new Date(dayBase.getTime() + hour * 3_600_000 + min * 60_000);
 
-  // Simulated batches through the day (sums match ELEGU 08.05.2026 SITREP)
-  const arrivalBatches: Array<[string, number, number, number, number, string?]> = [
-    ["SSD", 40, 20, 7, 0, "Morning Sudan block"],
-    ["SSD", 39, 23, 9, 30, "Midday South Sudan"],
-    ["KE", 40, 2, 8, 0],
-    ["KE", 26, 2, 10, 15],
-    ["ER", 10, 1, 11, 0],
-    ["ER", 6, 0, 14, 30],
-    ["UG", 6, 2, 15, 0],
-    ["UG", 4, 2, 16, 45],
-    ["BI", 1, 0, 7, 30],
-    ["RW", 1, 0, 12, 0],
-    ["SD", 5, 1, 13, 0],
-    ["SD", 3, 0, 17, 0],
-    ["TZ", 1, 0, 18, 30],
+  const batches: Array<{
+    type: DailyEntryType;
+    code: string | null;
+    male: number;
+    female: number;
+    h: number;
+    m?: number;
+    note?: string;
+  }> = [
+    { type: DailyEntryType.arrival, code: "SSD", male: 40, female: 20, h: 7, note: "Morning" },
+    { type: DailyEntryType.arrival, code: "SSD", male: 39, female: 23, h: 9, m: 30 },
+    { type: DailyEntryType.arrival, code: "KE", male: 40, female: 2, h: 8 },
+    { type: DailyEntryType.arrival, code: "KE", male: 26, female: 2, h: 10, m: 15 },
+    { type: DailyEntryType.arrival, code: "ER", male: 16, female: 1, h: 11 },
+    { type: DailyEntryType.arrival, code: "UG", male: 10, female: 4, h: 14 },
+    { type: DailyEntryType.arrival, code: "BI", male: 1, female: 0, h: 7, m: 30 },
+    { type: DailyEntryType.arrival, code: "RW", male: 1, female: 0, h: 12 },
+    { type: DailyEntryType.arrival, code: "SD", male: 8, female: 1, h: 13 },
+    { type: DailyEntryType.arrival, code: "TZ", male: 1, female: 0, h: 18, m: 30 },
+    { type: DailyEntryType.departure, code: "SSD", male: 80, female: 36, h: 8 },
+    { type: DailyEntryType.departure, code: "KE", male: 26, female: 15, h: 9, m: 30 },
+    { type: DailyEntryType.departure, code: "UG", male: 27, female: 17, h: 15, m: 30 },
+    { type: DailyEntryType.departure, code: "ER", male: 8, female: 1, h: 12 },
+    { type: DailyEntryType.departure, code: "SD", male: 8, female: 0, h: 13, m: 30 },
+    { type: DailyEntryType.departure, code: "BI", male: 4, female: 0, h: 17 },
+    { type: DailyEntryType.departure, code: "USA", male: 1, female: 0, h: 18 },
+    { type: DailyEntryType.asylum_seeker, code: null, male: 20, female: 12, h: 10 },
+    { type: DailyEntryType.asylum_seeker, code: null, male: 13, female: 10, h: 15 },
   ];
 
-  for (const [code, male, female, h, m, note] of arrivalBatches) {
-    await prisma.movement.create({
+  for (const b of batches) {
+    await prisma.dailyEntry.create({
       data: {
         reportId: eleguReport.id,
-        movementType: MovementType.arrival,
-        nationalityCode: code,
-        male,
-        female,
-        recordedAt: at(h, m),
+        entryType: b.type,
+        nationalityCode: b.code,
+        male: b.male,
+        female: b.female,
+        recordedAt: at(b.h, b.m ?? 0),
         enteredById: eleguUser?.id,
-        notes: note,
+        notes: b.note,
       },
     });
   }
 
-  const departureBatches: Array<[string, number, number, number, number]> = [
-    ["SSD", 45, 18, 8, 0],
-    ["SSD", 35, 18, 11, 0],
-    ["KE", 15, 8, 9, 30],
-    ["KE", 11, 7, 14, 0],
-    ["UG", 14, 9, 10, 0],
-    ["UG", 13, 8, 15, 30],
-    ["ER", 5, 1, 12, 0],
-    ["ER", 3, 0, 16, 0],
-    ["SD", 8, 0, 13, 30],
-    ["BI", 4, 0, 17, 0],
-    ["USA", 1, 0, 18, 0],
-  ];
-
-  for (const [code, male, female, h, m] of departureBatches) {
-    await prisma.movement.create({
-      data: {
-        reportId: eleguReport.id,
-        movementType: MovementType.departure,
-        nationalityCode: code,
-        male,
-        female,
-        recordedAt: at(h, m),
-        enteredById: eleguUser?.id,
-      },
-    });
-  }
-
-  await prisma.specialCategory.create({
-    data: {
-      reportId: eleguReport.id,
-      category: "asylum_seekers",
-      male: 20,
-      female: 12,
-      recordedAt: at(10, 0),
-      enteredById: eleguUser?.id,
-      notes: "Morning intake",
-    },
-  });
-  await prisma.specialCategory.create({
-    data: {
-      reportId: eleguReport.id,
-      category: "asylum_seekers",
-      male: 13,
-      female: 10,
-      recordedAt: at(15, 0),
-      enteredById: eleguUser?.id,
-      notes: "Afternoon intake",
-    },
-  });
-
-  console.log("Seed complete. Demo password for all users:", DEMO_PASSWORD);
+  console.log("Seed complete. Demo password:", DEMO_PASSWORD);
 }
 
 main()

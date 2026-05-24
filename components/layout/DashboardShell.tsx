@@ -2,12 +2,37 @@ import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { homePathForRoles } from "@/lib/rbac";
 import { redirect } from "next/navigation";
+import { AppPreferencesProvider } from "@/components/providers/AppPreferencesProvider";
+import { DashboardLayoutClient } from "@/components/layout/DashboardLayoutClient";
 
 const NAV = [
-  { href: "/station", label: "Station entry", roles: ["STATION_INPUTTER"] },
-  { href: "/hq/inbox", label: "HQ inbox", roles: ["HQ_REVIEWER", "HQ_VERIFIER", "HQ_AUTHORISER", "ADMIN"] },
-  { href: "/hq/consolidated", label: "Consolidated SITREP", roles: ["HQ_VERIFIER", "HQ_AUTHORISER", "ADMIN"] },
-  { href: "/weekly", label: "Weekly export", roles: ["HQ_VERIFIER", "HQ_AUTHORISER", "ADMIN"] },
+  { href: "/settings", label: "Settings", roles: ["*"] },
+  {
+    href: "/station",
+    label: "Station entry",
+    roles: ["STATION_INPUTTER", "CLUSTER_SUPERVISOR", "ADMIN"],
+  },
+  {
+    href: "/hq/inbox",
+    label: "HQ inbox",
+    roles: [
+      "HQ_REVIEWER",
+      "HQ_VERIFIER",
+      "HQ_AUTHORISER",
+      "CLUSTER_SUPERVISOR",
+      "ADMIN",
+    ],
+  },
+  {
+    href: "/hq/consolidated",
+    label: "Consolidated SITREP",
+    roles: ["HQ_VERIFIER", "HQ_AUTHORISER", "ADMIN"],
+  },
+  {
+    href: "/weekly",
+    label: "Weekly export",
+    roles: ["HQ_VERIFIER", "HQ_AUTHORISER", "ADMIN"],
+  },
   { href: "/admin", label: "Admin", roles: ["ADMIN"] },
 ];
 
@@ -22,9 +47,11 @@ export async function DashboardShell({
   if (!session?.user) redirect("/login");
 
   const { user } = session;
-  const links = NAV.filter((item) =>
-    item.roles.some((r) => user.roles.includes(r)),
-  );
+  const links = NAV.filter(
+    (item) =>
+      item.roles.includes("*") ||
+      item.roles.some((r) => user.roles.includes(r)),
+  ).map(({ href, label }) => ({ href, label }));
 
   return (
     <div className="min-h-screen bg-zinc-100">
@@ -34,28 +61,24 @@ export async function DashboardShell({
             <Link href="/dashboard" className="text-lg font-bold tracking-tight">
               e-SITREP
             </Link>
-            <p className="text-xs font-medium text-white">
+            <p className="text-xs font-medium text-white/95">
               Ministry of Internal Affairs · NCIC
             </p>
           </div>
           <div className="text-right text-sm text-white">
             <p className="font-semibold">{user.fullName}</p>
-            <p className="text-white/95">{user.roles.join(", ")}</p>
+            <p className="max-w-[12rem] truncate text-white/95 sm:max-w-none">
+              {user.roles.join(", ")}
+            </p>
           </div>
         </div>
       </header>
-      <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
-        <aside className="w-48 shrink-0">
-          <nav className="space-y-1 rounded-lg border bg-white p-2 text-sm shadow-sm">
-            {links.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block rounded px-3 py-2 font-medium text-zinc-900 hover:bg-emerald-50 hover:text-emerald-950"
-              >
-                {item.label}
-              </Link>
-            ))}
+
+      <AppPreferencesProvider>
+        <DashboardLayoutClient
+          links={links}
+          title={title}
+          signOutForm={
             <form
               action={async () => {
                 "use server";
@@ -64,20 +87,16 @@ export async function DashboardShell({
             >
               <button
                 type="submit"
-                className="mt-2 w-full rounded px-3 py-2 text-left text-red-700 hover:bg-red-50"
+                className="w-full rounded-md px-3 py-2 text-left font-medium text-red-700 hover:bg-red-50"
               >
                 Sign out
               </button>
             </form>
-          </nav>
-        </aside>
-        <main className="min-w-0 flex-1">
-          {title && (
-            <h1 className="mb-4 text-2xl font-semibold text-zinc-900">{title}</h1>
-          )}
+          }
+        >
           {children}
-        </main>
-      </div>
+        </DashboardLayoutClient>
+      </AppPreferencesProvider>
     </div>
   );
 }

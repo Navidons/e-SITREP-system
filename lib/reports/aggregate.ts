@@ -1,7 +1,5 @@
-import type { MovementType } from "@prisma/client";
-
 export type MovementRow = {
-  movementType: MovementType | "arrival" | "departure";
+  movementType: "arrival" | "departure";
   nationalityCode: string;
   male: number;
   female: number;
