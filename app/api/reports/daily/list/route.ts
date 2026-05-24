@@ -5,6 +5,7 @@ import {
   getDayRecordMonthCounts,
   getDayRecordYears,
   listDayRecordsPaginated,
+  listRejectedForStation,
   todayDateString,
 } from "@/lib/reports/daily-day";
 
@@ -32,7 +33,8 @@ export async function GET(request: Request) {
 
   if (searchParams.get("meta") === "1") {
     const years = await getDayRecordYears(stationId);
-    return NextResponse.json({ today, years });
+    const rejected = await listRejectedForStation(stationId);
+    return NextResponse.json({ today, years, rejected });
   }
 
   const yearParam = searchParams.get("year");

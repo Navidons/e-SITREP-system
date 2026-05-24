@@ -19,8 +19,9 @@ model BorderStation {
   cluster   String?  @db.VarChar(50)
   type      String?  @db.VarChar(30)
   reportingProfile ReportingProfile @default(land) @map("reporting_profile")
-  location  String?
-  active    Boolean  @default(true)
+  location     String?
+  displayOrder Int      @default(999) @map("display_order")
+  active       Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -79,6 +80,7 @@ model User {
   station       BorderStation?       @relation(fields: [stationId], references: [id])
   userRoles     UserRole[]
   reports            StationDailyReport[] @relation("SubmittedBy")
+  reportsRejected    StationDailyReport[] @relation("RejectedBy")
   dailyEntries       DailyEntry[]
   auditLogs          AuditLog[]
   assignedRoles      UserRole[]           @relation("AssignedBy")
@@ -124,6 +126,9 @@ model StationDailyReport {
   submittedById    Int?         @map("submitted_by")
   submissionTime   DateTime?    @map("submission_time")
   status           ReportStatus @default(draft)
+  rejectionReason  String?      @map("rejection_reason")
+  rejectedById     Int?         @map("rejected_by")
+  rejectedAt       DateTime?    @map("rejected_at")
   staffOnDuty      Int          @default(0) @map("staff_on_duty")
   medicalScreening String?      @map("medical_screening")
   generalRemarks   String?      @map("general_remarks")
@@ -134,6 +139,7 @@ model StationDailyReport {
 
   station     BorderStation @relation(fields: [stationId], references: [id])
   submittedBy User?         @relation("SubmittedBy", fields: [submittedById], references: [id])
+  rejectedBy  User?         @relation("RejectedBy", fields: [rejectedById], references: [id])
   entries     DailyEntry[]
   incidents   Incident[]
   amendments  DayAmendment[]

@@ -8,7 +8,7 @@ export async function GET() {
 
   const stations = await prisma.borderStation.findMany({
     where: { active: true },
-    orderBy: { name: "asc" },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
   });
 
   return NextResponse.json(stations);

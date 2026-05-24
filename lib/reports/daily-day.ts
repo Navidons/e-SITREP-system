@@ -40,6 +40,7 @@ import {
 export const dayReportInclude = {
   station: true,
   submittedBy: { select: { id: true, fullName: true, username: true } },
+  rejectedBy: { select: { id: true, fullName: true, username: true } },
   entries: {
     orderBy: { recordedAt: "desc" as const },
     include: {
@@ -181,6 +182,13 @@ export function serializeDayReport(
       reportingProfile?: string;
       type?: string | null;
     };
+    rejectionReason: string | null;
+    rejectedAt: Date | null;
+    rejectedBy: {
+      id: number;
+      fullName: string;
+      username: string;
+    } | null;
     entries: Array<{
       id: number;
       entryType: DailyEntryType;
@@ -237,6 +245,9 @@ export function serializeDayReport(
     id: report.id,
     reportDate: reportDateStr,
     status: report.status,
+    rejectionReason: report.rejectionReason,
+    rejectedAt: report.rejectedAt?.toISOString() ?? null,
+    rejectedBy: report.rejectedBy,
     staffOnDuty: report.staffOnDuty,
     medicalScreening: report.medicalScreening,
     generalRemarks: report.generalRemarks,
@@ -316,6 +327,40 @@ export async function getDayRecordForUser(
 ) {
   const displayFormat = await getUserCountryCodeFormat(userId);
   return getDayRecord(stationId, reportDateStr, { displayFormat });
+}
+
+export async function getReportDetailById(reportId: number, userId?: number) {
+  const report = await prisma.stationDailyReport.findUnique({
+    where: { id: reportId },
+    include: dayReportInclude,
+  });
+  if (!report) return null;
+  const reportDateStr = report.reportDate.toISOString().slice(0, 10);
+  const displayFormat = userId
+    ? await getUserCountryCodeFormat(userId)
+    : undefined;
+  return serializeDayReport(report, reportDateStr, displayFormat);
+}
+
+export async function listRejectedForStation(stationId: number) {
+  const rows = await prisma.stationDailyReport.findMany({
+    where: { stationId, status: ReportStatus.rejected },
+    orderBy: { rejectedAt: "desc" },
+    select: {
+      id: true,
+      reportDate: true,
+      rejectionReason: true,
+      rejectedAt: true,
+      rejectedBy: { select: { fullName: true } },
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    reportDate: r.reportDate.toISOString().slice(0, 10),
+    rejectionReason: r.rejectionReason,
+    rejectedAt: r.rejectedAt?.toISOString() ?? null,
+    rejectedBy: r.rejectedBy,
+  }));
 }
 
 export type DayListItem = {

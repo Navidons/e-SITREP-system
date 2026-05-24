@@ -84,6 +84,8 @@ async function normalizeStoredNationalityCodes() {
 async function main() {
   console.log("Seeding e-SITREP database...");
 
+  const officialCodes = BORDER_STATIONS.map((s) => s.code);
+
   for (const s of BORDER_STATIONS) {
     await prisma.borderStation.upsert({
       where: { code: s.code },
@@ -91,16 +93,29 @@ async function main() {
         name: s.name,
         cluster: s.cluster,
         type: s.type,
+        displayOrder: s.displayOrder,
         active: true,
         reportingProfile:
           s.code === "ENT" ? ReportingProfile.air : ReportingProfile.land,
       },
       create: {
-        ...s,
+        code: s.code,
+        name: s.name,
+        cluster: s.cluster,
+        type: s.type,
+        displayOrder: s.displayOrder,
         reportingProfile:
           s.code === "ENT" ? ReportingProfile.air : ReportingProfile.land,
       },
     });
+  }
+
+  const deactivated = await prisma.borderStation.updateMany({
+    where: { code: { notIn: officialCodes } },
+    data: { active: false },
+  });
+  if (deactivated.count > 0) {
+    console.log(`Deactivated ${deactivated.count} stations not in weekly matrix.`);
   }
 
   await seedEntebbeAirportProfile(prisma);

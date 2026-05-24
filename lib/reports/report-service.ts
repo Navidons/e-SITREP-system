@@ -38,6 +38,6 @@ export async function getApprovedReportsForDate(dateStr: string) {
       station: true,
       entries: true,
     },
-    orderBy: { station: { name: "asc" } },
+    orderBy: [{ station: { displayOrder: "asc" } }, { station: { name: "asc" } }],
   });
 }

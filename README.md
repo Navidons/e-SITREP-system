@@ -51,7 +51,7 @@ Password for all users: **`Demo@2026`**
 
 **Sample data:**
 
-- **30 border stations** seeded.
+- **56 border stations** seeded (names and S/N order from `instructions/support-files/WEEKLY STATISTICS 02.08 MAY 2026.xlsx`).
 - **Demo week 17–23 May 2026**: seven days per station with mixed statuses (draft → approved).
 - **Elegu 2026-05-08**: approved day matching the NCIC sample totals.
 - **Entebbe 2026-05-08**: submitted airport sample from the Entebbe PDF (flights, deportees, offloaded, inadmissible).
@@ -82,6 +82,7 @@ Password for all users: **`Demo@2026`**
 
 | Document | Description |
 |----------|-------------|
+| [**5-page complete guide**](docs/SYSTEM_GUIDE.md) | Everything in one short document (setup, roles, entry, HQ, exports, APIs, demo) — print-friendly |
 | [**System documentation (A–Z)**](docs/SYSTEM_DOCUMENTATION.md) | Full system guide: architecture, RBAC, workflows, APIs, land vs air, exports |
 | [`instructions/`](instructions/) | NCIC requirements and sample PDFs/Excel |
 | [`e-sitrep_mvp_build_a94b9943.plan.md`](e-sitrep_mvp_build_a94b9943.plan.md) | Implementation plan |

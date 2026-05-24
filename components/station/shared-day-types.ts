@@ -30,6 +30,9 @@ export type DayData = {
   id?: number;
   reportDate: string;
   status: string;
+  rejectionReason?: string | null;
+  rejectedAt?: string | null;
+  rejectedBy?: { fullName: string } | null;
   isToday?: boolean;
   staffOnDuty?: number;
   medicalScreening?: string;

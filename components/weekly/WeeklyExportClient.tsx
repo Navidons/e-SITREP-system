@@ -13,13 +13,13 @@ function addDays(iso: string, days: number): string {
 /** Layout reference in instructions/support-files */
 const REFERENCE_WEEK_FROM = "2026-05-02";
 const REFERENCE_WEEK_TO = "2026-05-08";
-/** Seeded demo week (mixed/approved days) */
-const DEMO_WEEK_FROM = "2026-05-17";
-const DEMO_WEEK_TO = "2026-05-23";
 
 export function WeeklyExportClient() {
-  const [from, setFrom] = useState(DEMO_WEEK_FROM);
-  const [to, setTo] = useState(DEMO_WEEK_TO);
+  const [from, setFrom] = useState(() => {
+    const end = formatDateInput(new Date());
+    return addDays(end, -6);
+  });
+  const [to, setTo] = useState(() => formatDateInput(new Date()));
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,11 +63,6 @@ export function WeeklyExportClient() {
     setTo(REFERENCE_WEEK_TO);
   }
 
-  function useDemoWeek() {
-    setFrom(DEMO_WEEK_FROM);
-    setTo(DEMO_WEEK_TO);
-  }
-
   function useLastSevenDays() {
     const end = formatDateInput(new Date());
     setTo(end);
@@ -91,9 +86,6 @@ export function WeeklyExportClient() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" onClick={useDemoWeek}>
-            Demo week (17–23 May 2026)
-          </Button>
           <Button type="button" variant="secondary" onClick={useReferenceWeek}>
             Reference week (2–8 May 2026)
           </Button>

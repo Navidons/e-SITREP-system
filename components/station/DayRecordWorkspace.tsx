@@ -6,6 +6,7 @@ import { useAppPreferences } from "@/components/providers/AppPreferencesProvider
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { DailySummaryTable } from "@/components/forms/DailySummaryTable";
+import { RejectionBanner } from "@/components/station/RejectionBanner";
 import { formatDateInput } from "@/lib/utils";
 import {
   ENTRY_LABELS,
@@ -37,6 +38,8 @@ type DayData = {
   id?: number;
   reportDate: string;
   status: string;
+  rejectionReason?: string | null;
+  rejectedBy?: { fullName: string } | null;
   isToday?: boolean;
   staffOnDuty?: number;
   medicalScreening?: string;
@@ -449,6 +452,13 @@ export function DayRecordWorkspace({
           <span className="text-sm font-medium text-zinc-600">Loading…</span>
         )}
       </div>
+
+      {data?.status === "rejected" && data.rejectionReason && (
+        <RejectionBanner
+          reason={data.rejectionReason}
+          rejectedBy={data.rejectedBy}
+        />
+      )}
 
       {message && (
         <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-950">

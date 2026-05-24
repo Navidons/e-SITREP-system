@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { Drawer, DrawerToggle, useDrawer } from "@/components/layout/Drawer";
 import { DayRecordRouter } from "@/components/station/DayRecordRouter";
 import { PreviousDaysPanel } from "@/components/station/PreviousDaysPanel";
+import {
+  RejectionAlertsList,
+  type RejectedAlert,
+} from "@/components/station/RejectionBanner";
 import { formatDateInput, cn } from "@/lib/utils";
 
 function todayString() {
@@ -15,6 +19,7 @@ export function StationInputterApp({ isAdmin = false }: { isAdmin?: boolean }) {
   const [view, setView] = useState<"today" | "history">("today");
   const [selectedDate, setSelectedDate] = useState(today);
   const [todayMeta, setTodayMeta] = useState(today);
+  const [rejectedAlerts, setRejectedAlerts] = useState<RejectedAlert[]>([]);
   const daysDrawer = useDrawer("station-days", true);
 
   useEffect(() => {
@@ -22,6 +27,7 @@ export function StationInputterApp({ isAdmin = false }: { isAdmin?: boolean }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (json?.today) setTodayMeta(json.today);
+        if (Array.isArray(json?.rejected)) setRejectedAlerts(json.rejected);
       })
       .catch(() => {});
   }, []);
@@ -38,6 +44,8 @@ export function StationInputterApp({ isAdmin = false }: { isAdmin?: boolean }) {
 
   return (
     <div className="space-y-4">
+      <RejectionAlertsList alerts={rejectedAlerts} onOpenDay={openDay} />
+
       <div className="flex flex-wrap items-center gap-2">
         <DrawerToggle
           label="Daily records"

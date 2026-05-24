@@ -56,17 +56,36 @@ export async function transitionReport(
     };
   }
 
+  if (step === "reject" && !comment?.trim()) {
+    return {
+      error: "Rejection reason is required",
+      status: 400 as const,
+      requiresComment: true as const,
+    };
+  }
+
+  const isReject = step === "reject";
+  const isResubmit = step === "submit" && report.status === ReportStatus.rejected;
+
   const updated = await prisma.stationDailyReport.update({
     where: { id: reportId },
     data: {
       status: rule.to,
       submissionTime:
         step === "submit" ? new Date() : report.submissionTime,
-      generalRemarks: comment
-        ? [report.generalRemarks, `[${step}] ${comment}`]
-            .filter(Boolean)
-            .join("\n")
-        : report.generalRemarks,
+      rejectionReason: isReject
+        ? comment!.trim()
+        : isResubmit
+          ? null
+          : report.rejectionReason,
+      rejectedById: isReject ? userId : isResubmit ? null : report.rejectedById,
+      rejectedAt: isReject ? new Date() : isResubmit ? null : report.rejectedAt,
+      generalRemarks:
+        comment && !isReject
+          ? [report.generalRemarks, `[${step}] ${comment.trim()}`]
+              .filter(Boolean)
+              .join("\n")
+          : report.generalRemarks,
     },
     include: reportInclude,
   });
@@ -76,8 +95,15 @@ export async function transitionReport(
     action: rule.action,
     entityType: "station_daily_report",
     entityId: reportId,
-    oldValues: { status: report.status },
-    newValues: { status: rule.to, comment },
+    oldValues: {
+      status: report.status,
+      rejectionReason: report.rejectionReason,
+    },
+    newValues: {
+      status: rule.to,
+      comment: comment?.trim(),
+      rejectionReason: updated.rejectionReason,
+    },
   });
 
   return { report: updated };

@@ -37,11 +37,11 @@ function formatNationalitySegment(
   return female > 0 ? `${base} (${padCount(female)} FE)` : base;
 }
 
-function formatMovementLine(
+function summarizeMovement(
   movements: MovementRow[],
   movementType: "arrival" | "departure",
   label: string,
-): string {
+): { total: number; line: string } {
   const filtered = movements.filter((m) => m.movementType === movementType);
   const grouped = new Map<string, { male: number; female: number }>();
 
@@ -67,8 +67,52 @@ function formatMovementLine(
     0,
   );
 
-  if (grandTotal === 0) return `0 ${label}:`;
-  return `${grandTotal} ${label}: ${segments.join(", ")}`;
+  if (grandTotal === 0) return { total: 0, line: `0 ${label}:` };
+  return {
+    total: grandTotal,
+    line: `${grandTotal} ${label}: ${segments.join(", ")}`,
+  };
+}
+
+function formatMovementLine(
+  movements: MovementRow[],
+  movementType: "arrival" | "departure",
+  label: string,
+): string {
+  return summarizeMovement(movements, movementType, label).line;
+}
+
+export type StationConsolidatedTableRow = {
+  stationCode: string;
+  stationName: string;
+  arrivalsTotal: number;
+  departuresTotal: number;
+  arrivalsLine: string;
+  departuresLine: string;
+  asylumLine: string | null;
+};
+
+export function toStationConsolidatedTableRow(
+  input: StationConsolidatedInput,
+): StationConsolidatedTableRow {
+  const arrivals = summarizeMovement(input.movements, "arrival", "ARRIVALS");
+  const departures = summarizeMovement(
+    input.movements,
+    "departure",
+    "DEPARTURES",
+  );
+  const asylum = input.specialCategories
+    ? formatAsylumLine(input.specialCategories)
+    : null;
+  return {
+    stationCode: input.stationCode,
+    stationName: input.stationName,
+    arrivalsTotal: arrivals.total,
+    departuresTotal: departures.total,
+    arrivalsLine: arrivals.line,
+    departuresLine: departures.line,
+    asylumLine: asylum,
+  };
 }
 
 function formatAsylumLine(categories: SpecialCategoryRow[]): string | null {

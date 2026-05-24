@@ -47,7 +47,7 @@ export async function listAdminUsers(): Promise<UserListRow[]> {
 
 export async function listAdminStations(): Promise<StationListRow[]> {
   const stations = await prisma.borderStation.findMany({
-    orderBy: { name: "asc" },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     include: { _count: { select: { users: true } } },
   });
 
@@ -72,7 +72,8 @@ export async function listRoleOptions() {
 
 export async function listStationOptions() {
   return prisma.borderStation.findMany({
-    orderBy: { name: "asc" },
+    where: { active: true },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     select: { id: true, code: true, name: true, active: true },
   });
 }

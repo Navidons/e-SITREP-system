@@ -8,6 +8,7 @@ National Citizenship and Immigration Control (NCIC), Ministry of Internal Affair
 | System | MVP (Next.js 16) |
 | Last updated | May 2026 |
 | Audience | Developers, HQ staff, station operators, administrators |
+| Short guide (≤5 pages) | [`SYSTEM_GUIDE.md`](./SYSTEM_GUIDE.md) |
 
 ---
 

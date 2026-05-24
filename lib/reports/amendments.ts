@@ -447,6 +447,13 @@ export async function rejectAmendment(
   if (!canReviewAmendment(user, amendment.report.status)) {
     return { error: "Not authorized to reject this correction", status: 403 as const };
   }
+  if (!comment?.trim()) {
+    return {
+      error: "Reason is required when rejecting a correction",
+      status: 400 as const,
+      requiresComment: true as const,
+    };
+  }
 
   await prisma.dayAmendment.update({
     where: { id: amendmentId },

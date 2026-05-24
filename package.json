@@ -12,7 +12,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "test:formatter": "tsx scripts/test-formatter.ts"
+    "test:formatter": "tsx scripts/test-formatter.ts",
+    "stations:from-weekly": "tsx scripts/generate-border-stations-from-weekly.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { NationalitySelect } from "@/components/forms/NationalitySelect";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
 import { EntebbeSummaryTable } from "@/components/station/EntebbeSummaryTable";
+import { RejectionBanner } from "@/components/station/RejectionBanner";
 import type { DayData, DailyEntryRow } from "@/components/station/shared-day-types";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
@@ -360,6 +361,13 @@ export function EntebbeDayWorkspace({
         2:00 PM. Log flights (passenger counts), deportees, returned persons,
         offloaded and denied passengers, plus shift occurrences.
       </div>
+
+      {data?.status === "rejected" && data.rejectionReason && (
+        <RejectionBanner
+          reason={data.rejectionReason}
+          rejectedBy={data.rejectedBy}
+        />
+      )}
 
       {message && (
         <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-950">

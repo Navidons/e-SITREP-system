@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth-helpers";
 import { PERMISSIONS } from "@/lib/rbac";
+import { buildConsolidatedSitrepWorkbook } from "@/lib/exports/consolidated-table";
 import { loadConsolidatedForDate } from "@/lib/reports/consolidated-load";
 
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   const user = await requirePermission(
     PERMISSIONS.REPORT_GENERATE_CONSOLIDATED,
   );
@@ -16,17 +17,19 @@ export async function POST(request: Request) {
   }
 
   const data = await loadConsolidatedForDate(date);
-  return NextResponse.json({
-    date: data.date,
-    stationCount: data.stationCount,
-    consolidated: data.consolidated,
-    stations: data.stations.map((s) => ({
-      id: s.id,
-      station: s.station,
-      code: s.code,
-      text: s.text,
-      table: s.table,
-    })),
-    tableRows: data.tableRows,
+  const workbook = await buildConsolidatedSitrepWorkbook({
+    date,
+    rows: data.tableRows,
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const filename = `CONSOLIDATED DAILY SITREP ${date}.xlsx`;
+
+  return new NextResponse(buffer, {
+    headers: {
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
   });
 }

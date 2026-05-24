@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
   const stations = await prisma.borderStation.findMany({
     where: { active: true },
-    orderBy: { name: "asc" },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     select: { id: true, name: true, code: true },
   });
 
