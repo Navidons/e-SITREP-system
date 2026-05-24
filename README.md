@@ -42,13 +42,24 @@ Password for all users: **`Demo@2026`**
 
 | Username | Role | Use |
 |----------|------|-----|
-| `elegu.inputter` | Station inputter | Daily data entry (Elegu) |
+| `<station>.inputter` | Station inputter | Land posts use nationality batches; **`entebbe.inputter`** uses airport modules (flights, deportees, offloaded, occurrences) |
 | `reviewer` | HQ reviewer | Inbox → Review |
 | `verifier` | HQ verifier | Verify → Generate consolidated |
 | `authoriser` | HQ authoriser | Approve reports |
 | `admin` | Admin | Full access |
+| `eastern.supervisor` | Cluster supervisor | Eastern cluster (read-only scope in MVP) |
 
-**Sample data:** Elegu report for **2026-05-08** is pre-seeded and **approved** (matches `instructions/support-files/strep system.txt`).
+**Sample data:**
+
+- **30 border stations** seeded.
+- **Demo week 17–23 May 2026**: seven days per station with mixed statuses (draft → approved).
+- **Elegu 2026-05-08**: approved day matching the NCIC sample totals.
+- **Entebbe 2026-05-08**: submitted airport sample from the Entebbe PDF (flights, deportees, offloaded, inadmissible).
+- Nationality codes in the database are stored as **ISO alpha-2**; user Settings only change how codes appear in forms (alpha-2 vs alpha-3).
+
+**Consolidated SITREP test:** use date **2026-05-22** (many stations approved that day).
+
+**Weekly matrix export:** log in as `admin` or `verifier` → **Weekly export** → choose date range → download. Layout matches `instructions/support-files/WEEKLY STATISTICS 02.08 MAY 2026.xlsx`. Demo week **17–23 May 2026** is fully approved after `pnpm db:seed`.
 
 ## Features (MVP)
 
@@ -56,7 +67,7 @@ Password for all users: **`Demo@2026`**
 - Asylum seekers and remarks
 - Workflow: draft → submitted → reviewed → verified → approved
 - Consolidated SITREP text generator (HQ format)
-- Weekly Excel export (stations × days)
+- Weekly Excel export — NCIC matrix (stations × days, arrivals/departures per day, weekly & grand totals)
 
 ## Scripts
 
@@ -67,9 +78,13 @@ Password for all users: **`Demo@2026`**
 | `pnpm db:seed` | Seed stations, roles, demo users, Elegu report |
 | `pnpm test:formatter` | Validate Elegu consolidated strings |
 
-## Project docs
+## Documentation
 
-Requirements and samples live in [`instructions/`](instructions/). Implementation plan: [`e-sitrep_mvp_build_a94b9943.plan.md`](e-sitrep_mvp_build_a94b9943.plan.md).
+| Document | Description |
+|----------|-------------|
+| [**System documentation (A–Z)**](docs/SYSTEM_DOCUMENTATION.md) | Full system guide: architecture, RBAC, workflows, APIs, land vs air, exports |
+| [`instructions/`](instructions/) | NCIC requirements and sample PDFs/Excel |
+| [`e-sitrep_mvp_build_a94b9943.plan.md`](e-sitrep_mvp_build_a94b9943.plan.md) | Implementation plan |
 
 ## Phase 2 (deferred)
 

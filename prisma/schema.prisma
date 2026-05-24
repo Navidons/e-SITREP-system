@@ -7,12 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ReportingProfile {
+  land
+  air
+}
+
 model BorderStation {
   id        Int      @id @default(autoincrement())
   code      String   @unique @db.VarChar(20)
   name      String   @unique @db.VarChar(100)
   cluster   String?  @db.VarChar(50)
   type      String?  @db.VarChar(30)
+  reportingProfile ReportingProfile @default(land) @map("reporting_profile")
   location  String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
@@ -72,10 +78,12 @@ model User {
 
   station       BorderStation?       @relation(fields: [stationId], references: [id])
   userRoles     UserRole[]
-  reports       StationDailyReport[] @relation("SubmittedBy")
-  dailyEntries  DailyEntry[]
-  auditLogs     AuditLog[]
-  assignedRoles UserRole[]           @relation("AssignedBy")
+  reports            StationDailyReport[] @relation("SubmittedBy")
+  dailyEntries       DailyEntry[]
+  auditLogs          AuditLog[]
+  assignedRoles      UserRole[]           @relation("AssignedBy")
+  amendmentsRequested DayAmendment[]      @relation("AmendmentRequestedBy")
+  amendmentsReviewed  DayAmendment[]      @relation("AmendmentReviewedBy")
 
   @@map("users")
 }
@@ -119,13 +127,16 @@ model StationDailyReport {
   staffOnDuty      Int          @default(0) @map("staff_on_duty")
   medicalScreening String?      @map("medical_screening")
   generalRemarks   String?      @map("general_remarks")
-  urgentMatters    String?      @map("urgent_matters")
-  openedAt         DateTime     @default(now()) @map("opened_at")
+  urgentMatters      String?      @map("urgent_matters")
+  inadmissibleCount  Int          @default(0) @map("inadmissible_count")
+  staffLeaveNotes    String?      @map("staff_leave_notes")
+  openedAt           DateTime     @default(now()) @map("opened_at")
 
   station     BorderStation @relation(fields: [stationId], references: [id])
   submittedBy User?         @relation("SubmittedBy", fields: [submittedById], references: [id])
   entries     DailyEntry[]
   incidents   Incident[]
+  amendments  DayAmendment[]
 
   @@unique([stationId, reportDate])
   @@index([stationId, reportDate])
@@ -138,6 +149,49 @@ enum DailyEntryType {
   departure
   asylum_seeker
   refugee
+  /// Entebbe / airport: passengers on a flight
+  flight_arrival
+  flight_departure
+  deportee
+  returned_person
+  offloaded
+  denied_entry
+}
+
+enum AmendmentAction {
+  add_entry
+  delete_entry
+  update_entry
+}
+
+enum AmendmentStatus {
+  pending
+  approved
+  rejected
+}
+
+/// Correction queued for HQ approval before changing submitted day data.
+model DayAmendment {
+  id              Int              @id @default(autoincrement())
+  reportId        Int              @map("report_id")
+  status          AmendmentStatus  @default(pending)
+  action          AmendmentAction
+  payload         Json
+  reason          String?
+  reviewComment   String?          @map("review_comment")
+  targetEntryId   Int?             @map("target_entry_id")
+  requestedById   Int              @map("requested_by")
+  reviewedById    Int?             @map("reviewed_by")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  resolvedAt      DateTime?        @map("resolved_at")
+
+  report      StationDailyReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  requestedBy User               @relation("AmendmentRequestedBy", fields: [requestedById], references: [id])
+  reviewedBy  User?              @relation("AmendmentReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([reportId, status])
+  @@index([status, createdAt])
+  @@map("day_amendments")
 }
 
 /// Each log batch during the day (added at different times).
@@ -148,6 +202,11 @@ model DailyEntry {
   nationalityCode String?        @map("nationality_code") @db.VarChar(10)
   male            Int            @default(0)
   female          Int            @default(0)
+  flightNumber    String?        @map("flight_number") @db.VarChar(20)
+  route           String?        @db.VarChar(120)
+  shift           String?        @db.VarChar(1)
+  passportNo      String?        @map("passport_no") @db.VarChar(50)
+  personName      String?        @map("person_name") @db.VarChar(120)
   recordedAt      DateTime       @default(now()) @map("recorded_at")
   enteredById     Int?           @map("entered_by")
   notes           String?

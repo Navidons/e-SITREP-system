@@ -6,7 +6,6 @@ import { AppPreferencesProvider } from "@/components/providers/AppPreferencesPro
 import { DashboardLayoutClient } from "@/components/layout/DashboardLayoutClient";
 
 const NAV = [
-  { href: "/settings", label: "Settings", roles: ["*"] },
   {
     href: "/station",
     label: "Station entry",
@@ -33,6 +32,7 @@ const NAV = [
     label: "Weekly export",
     roles: ["HQ_VERIFIER", "HQ_AUTHORISER", "ADMIN"],
   },
+  { href: "/settings", label: "Settings", roles: ["*"] },
   { href: "/admin", label: "Admin", roles: ["ADMIN"] },
 ];
 

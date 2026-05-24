@@ -50,6 +50,11 @@ export function hasRole(user: SessionUser, role: string): boolean {
   return user.roles.includes(role);
 }
 
+/** Direct add/update on submitted days (bypass amendment queue). */
+export function isSystemAdmin(user: SessionUser): boolean {
+  return hasRole(user, "ADMIN") || can(user, PERMISSIONS.ADMIN_USERS);
+}
+
 export function isHqUser(user: SessionUser): boolean {
   return user.roles.some((r) => r.startsWith("HQ_") || r === "ADMIN");
 }

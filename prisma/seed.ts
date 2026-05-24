@@ -1,16 +1,27 @@
-import { PrismaClient, DailyEntryType, ReportStatus } from "@prisma/client";
+import {
+  CountryCodeFormat,
+  PrismaClient,
+  ReportingProfile,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { ROLE_PERMISSIONS } from "../lib/rbac";
+import { loadCountries } from "../lib/countries/service";
+import { normalizeCountryCodeForStorage } from "../lib/countries/storage";
+import {
+  BORDER_STATIONS,
+  stationInputterUsername,
+} from "./data/border-stations";
+import {
+  seedEntebbeAirportProfile,
+  seedEntebbeMaySample,
+} from "./data/entebbe-seed";
+import {
+  DEMO_WEEK_START,
+  seedDemoWeekForStations,
+  seedEleguApprovedSample,
+} from "./data/seed-week";
 
 const prisma = new PrismaClient();
-
-const STATIONS = [
-  { code: "ENT", name: "ENTEBBE", cluster: "Kampala", type: "Air" },
-  { code: "BUS", name: "BUSIA", cluster: "Eastern", type: "Land" },
-  { code: "ELE", name: "ELEGU", cluster: "Northern", type: "Land" },
-  { code: "MAL", name: "MALABA", cluster: "Eastern", type: "Land" },
-  { code: "MPO", name: "MPONDWE", cluster: "Western", type: "Land" },
-];
 
 const ROLES = [
   { name: "ADMIN", description: "System Administrator" },
@@ -33,16 +44,66 @@ const PERMISSION_LIST = [
 
 const DEMO_PASSWORD = "Demo@2026";
 
+const CLUSTER_SUPERVISORS = [
+  { username: "eastern.supervisor", fullName: "Eastern Cluster Supervisor", cluster: "Eastern" },
+  { username: "northern.supervisor", fullName: "Northern Cluster Supervisor", cluster: "Northern" },
+  { username: "western.supervisor", fullName: "Western Cluster Supervisor", cluster: "Western" },
+  {
+    username: "southwestern.supervisor",
+    fullName: "South-Western Cluster Supervisor",
+    cluster: "South-Western",
+  },
+  { username: "southern.supervisor", fullName: "Southern Cluster Supervisor", cluster: "Southern" },
+  { username: "kampala.supervisor", fullName: "Kampala Cluster Supervisor", cluster: "Kampala" },
+];
+
+async function normalizeStoredNationalityCodes() {
+  await loadCountries();
+  const entries = await prisma.dailyEntry.findMany({
+    where: { nationalityCode: { not: null } },
+    select: { id: true, nationalityCode: true },
+  });
+
+  let updated = 0;
+  for (const e of entries) {
+    if (!e.nationalityCode) continue;
+    const normalized = normalizeCountryCodeForStorage(e.nationalityCode);
+    if (normalized !== e.nationalityCode) {
+      await prisma.dailyEntry.update({
+        where: { id: e.id },
+        data: { nationalityCode: normalized },
+      });
+      updated++;
+    }
+  }
+  if (updated > 0) {
+    console.log(`Normalized ${updated} nationality codes to ISO alpha-2.`);
+  }
+}
+
 async function main() {
   console.log("Seeding e-SITREP database...");
 
-  for (const s of STATIONS) {
+  for (const s of BORDER_STATIONS) {
     await prisma.borderStation.upsert({
       where: { code: s.code },
-      update: {},
-      create: s,
+      update: {
+        name: s.name,
+        cluster: s.cluster,
+        type: s.type,
+        active: true,
+        reportingProfile:
+          s.code === "ENT" ? ReportingProfile.air : ReportingProfile.land,
+      },
+      create: {
+        ...s,
+        reportingProfile:
+          s.code === "ENT" ? ReportingProfile.air : ReportingProfile.land,
+      },
     });
   }
+
+  await seedEntebbeAirportProfile(prisma);
 
   for (const p of PERMISSION_LIST) {
     await prisma.permission.upsert({
@@ -85,31 +146,32 @@ async function main() {
   );
 
   const hash = await bcrypt.hash(DEMO_PASSWORD, 10);
+  const inputterRoleId = roleMap.get("STATION_INPUTTER")!;
+  const supervisorRoleId = roleMap.get("CLUSTER_SUPERVISOR")!;
 
-  const demoUsers = [
-    { username: "admin", fullName: "System Admin", roles: ["ADMIN"], stationCode: null },
-    { username: "authoriser", fullName: "HQ Authoriser", roles: ["HQ_AUTHORISER"], stationCode: null },
-    { username: "verifier", fullName: "HQ Verifier", roles: ["HQ_VERIFIER"], stationCode: null },
-    { username: "reviewer", fullName: "HQ Reviewer", roles: ["HQ_REVIEWER"], stationCode: null },
-    { username: "elegu.inputter", fullName: "Elegu Inputter", roles: ["STATION_INPUTTER"], stationCode: "ELE" },
-    { username: "busia.inputter", fullName: "Busia Inputter", roles: ["STATION_INPUTTER"], stationCode: "BUS" },
+  const hqUsers = [
+    { username: "admin", fullName: "System Admin", roles: ["ADMIN"], stationCode: null as string | null, format: CountryCodeFormat.alpha2 },
+    { username: "authoriser", fullName: "HQ Authoriser", roles: ["HQ_AUTHORISER"], stationCode: null, format: CountryCodeFormat.alpha2 },
+    { username: "verifier", fullName: "HQ Verifier", roles: ["HQ_VERIFIER"], stationCode: null, format: CountryCodeFormat.alpha2 },
+    { username: "reviewer", fullName: "HQ Reviewer", roles: ["HQ_REVIEWER"], stationCode: null, format: CountryCodeFormat.alpha2 },
   ];
 
-  for (const u of demoUsers) {
+  for (const u of hqUsers) {
     const user = await prisma.user.upsert({
       where: { username: u.username },
       update: {
         passwordHash: hash,
         fullName: u.fullName,
-        stationId: u.stationCode ? stationMap.get(u.stationCode) ?? null : null,
+        stationId: null,
         isActive: true,
+        countryCodeFormat: u.format,
       },
       create: {
         username: u.username,
         email: `${u.username}@esitrep.local`,
         passwordHash: hash,
         fullName: u.fullName,
-        stationId: u.stationCode ? stationMap.get(u.stationCode) ?? null : null,
+        countryCodeFormat: u.format,
       },
     });
 
@@ -124,78 +186,90 @@ async function main() {
     }
   }
 
-  const eleguId = stationMap.get("ELE")!;
-  const eleguUser = await prisma.user.findUnique({ where: { username: "elegu.inputter" } });
-  const reportDate = new Date("2026-05-08T00:00:00.000Z");
-
-  const eleguReport = await prisma.stationDailyReport.upsert({
-    where: {
-      stationId_reportDate: { stationId: eleguId, reportDate },
-    },
-    update: { status: ReportStatus.draft },
-    create: {
-      stationId: eleguId,
-      reportDate,
-      submittedById: eleguUser?.id,
-      status: ReportStatus.draft,
-      staffOnDuty: 12,
-      medicalScreening: "All travellers screened per protocol.",
-      generalRemarks: "Normal operations.",
-    },
-  });
-
-  await prisma.dailyEntry.deleteMany({ where: { reportId: eleguReport.id } });
-
-  const dayBase = new Date("2026-05-08T00:00:00.000Z");
-  const at = (hour: number, min = 0) =>
-    new Date(dayBase.getTime() + hour * 3_600_000 + min * 60_000);
-
-  const batches: Array<{
-    type: DailyEntryType;
-    code: string | null;
-    male: number;
-    female: number;
-    h: number;
-    m?: number;
-    note?: string;
-  }> = [
-    { type: DailyEntryType.arrival, code: "SSD", male: 40, female: 20, h: 7, note: "Morning" },
-    { type: DailyEntryType.arrival, code: "SSD", male: 39, female: 23, h: 9, m: 30 },
-    { type: DailyEntryType.arrival, code: "KE", male: 40, female: 2, h: 8 },
-    { type: DailyEntryType.arrival, code: "KE", male: 26, female: 2, h: 10, m: 15 },
-    { type: DailyEntryType.arrival, code: "ER", male: 16, female: 1, h: 11 },
-    { type: DailyEntryType.arrival, code: "UG", male: 10, female: 4, h: 14 },
-    { type: DailyEntryType.arrival, code: "BI", male: 1, female: 0, h: 7, m: 30 },
-    { type: DailyEntryType.arrival, code: "RW", male: 1, female: 0, h: 12 },
-    { type: DailyEntryType.arrival, code: "SD", male: 8, female: 1, h: 13 },
-    { type: DailyEntryType.arrival, code: "TZ", male: 1, female: 0, h: 18, m: 30 },
-    { type: DailyEntryType.departure, code: "SSD", male: 80, female: 36, h: 8 },
-    { type: DailyEntryType.departure, code: "KE", male: 26, female: 15, h: 9, m: 30 },
-    { type: DailyEntryType.departure, code: "UG", male: 27, female: 17, h: 15, m: 30 },
-    { type: DailyEntryType.departure, code: "ER", male: 8, female: 1, h: 12 },
-    { type: DailyEntryType.departure, code: "SD", male: 8, female: 0, h: 13, m: 30 },
-    { type: DailyEntryType.departure, code: "BI", male: 4, female: 0, h: 17 },
-    { type: DailyEntryType.departure, code: "USA", male: 1, female: 0, h: 18 },
-    { type: DailyEntryType.asylum_seeker, code: null, male: 20, female: 12, h: 10 },
-    { type: DailyEntryType.asylum_seeker, code: null, male: 13, female: 10, h: 15 },
-  ];
-
-  for (const b of batches) {
-    await prisma.dailyEntry.create({
-      data: {
-        reportId: eleguReport.id,
-        entryType: b.type,
-        nationalityCode: b.code,
-        male: b.male,
-        female: b.female,
-        recordedAt: at(b.h, b.m ?? 0),
-        enteredById: eleguUser?.id,
-        notes: b.note,
+  for (const sup of CLUSTER_SUPERVISORS) {
+    const user = await prisma.user.upsert({
+      where: { username: sup.username },
+      update: {
+        passwordHash: hash,
+        fullName: sup.fullName,
+        stationId: null,
+        isActive: true,
       },
+      create: {
+        username: sup.username,
+        email: `${sup.username}@esitrep.local`,
+        passwordHash: hash,
+        fullName: sup.fullName,
+      },
+    });
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: supervisorRoleId } },
+      update: {},
+      create: { userId: user.id, roleId: supervisorRoleId },
     });
   }
 
-  console.log("Seed complete. Demo password:", DEMO_PASSWORD);
+  const inputterByStationId = new Map<number, number>();
+
+  for (let i = 0; i < BORDER_STATIONS.length; i++) {
+    const station = BORDER_STATIONS[i];
+    const stationId = stationMap.get(station.code)!;
+    const username = stationInputterUsername(station.name);
+    const useAlpha3 = i % 3 === 1;
+
+    const user = await prisma.user.upsert({
+      where: { username },
+      update: {
+        passwordHash: hash,
+        fullName: `${station.name} Inputter`,
+        stationId,
+        isActive: true,
+        countryCodeFormat: useAlpha3
+          ? CountryCodeFormat.alpha3
+          : CountryCodeFormat.alpha2,
+      },
+      create: {
+        username,
+        email: `${username}@esitrep.local`,
+        passwordHash: hash,
+        fullName: `${station.name} Inputter`,
+        stationId,
+        countryCodeFormat: useAlpha3
+          ? CountryCodeFormat.alpha3
+          : CountryCodeFormat.alpha2,
+      },
+    });
+
+    await prisma.userRole.upsert({
+      where: { userId_roleId: { userId: user.id, roleId: inputterRoleId } },
+      update: {},
+      create: { userId: user.id, roleId: inputterRoleId },
+    });
+
+    inputterByStationId.set(stationId, user.id);
+  }
+
+  const stationsForWeek = await prisma.borderStation.findMany({
+    where: { code: { in: BORDER_STATIONS.map((s) => s.code) } },
+    select: { id: true, reportingProfile: true },
+  });
+  await seedDemoWeekForStations(prisma, stationsForWeek, inputterByStationId);
+
+  const eleguId = stationMap.get("ELE")!;
+  const eleguUserId = inputterByStationId.get(eleguId)!;
+  await seedEleguApprovedSample(prisma, eleguId, eleguUserId);
+
+  const entebbeId = stationMap.get("ENT")!;
+  const entebbeUserId = inputterByStationId.get(entebbeId)!;
+  await seedEntebbeMaySample(prisma, entebbeId, entebbeUserId);
+
+  await normalizeStoredNationalityCodes();
+
+  console.log(`Stations: ${BORDER_STATIONS.length}`);
+  console.log(`Demo week: ${DEMO_WEEK_START} (+6 days), mixed workflow statuses`);
+  console.log(`Station logins: <stationname>.inputter (e.g. elegu.inputter, busia.inputter)`);
+  console.log("Password:", DEMO_PASSWORD);
+  console.log("Seed complete.");
 }
 
 main()

@@ -10,7 +10,10 @@ import type { DayEntryPayload } from "@/types/reports";
 
 const DEFAULT_DATE = "2026-05-08";
 
-type EntryType = DayEntryPayload["entryType"];
+type EntryType = Extract<
+  DayEntryPayload["entryType"],
+  "arrival" | "departure" | "asylum_seeker" | "refugee"
+>;
 type TabId = "entry" | "log" | "totals" | "submit";
 
 type MovementEntry = {

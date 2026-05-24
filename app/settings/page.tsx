@@ -25,8 +25,8 @@ export default function SettingsPage() {
       await setCountryCodeFormat(format);
       setMessage(
         format === "alpha2"
-          ? "Saved. Nationality fields now use 2-letter codes (e.g. UG, KE)."
-          : "Saved. Nationality fields now use 3-letter codes (e.g. UGA, KEN).",
+          ? "Saved. Forms show 2-letter codes (e.g. UG, KE). The database always stores ISO alpha-2."
+          : "Saved. Forms show 3-letter codes (e.g. UGA, KEN). The database always stores ISO alpha-2.",
       );
     } catch {
       setError("Could not save. Try again.");
@@ -44,9 +44,10 @@ export default function SettingsPage() {
           Nationality codes
         </h2>
         <p className="mt-1 text-sm text-zinc-700">
-          Choose how country codes appear in dropdowns and are stored when you
-          add entries. Country names come from the REST Countries database
-          (all UN member states and territories).
+          Choose how country codes appear in dropdowns and entry forms. All
+          stations share one normalized format in the database (ISO alpha-2);
+          your preference only affects what you see when typing and editing.
+          Country names come from the REST Countries database.
         </p>
       </div>
 

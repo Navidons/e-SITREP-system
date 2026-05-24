@@ -1,21 +1,21 @@
 /** Maps roles to sidebar menu labels (must match DashboardShell NAV). */
 export const ROLE_MENU_ACCESS: Record<string, string[]> = {
-  STATION_INPUTTER: ["Settings", "Station entry"],
-  CLUSTER_SUPERVISOR: ["Settings", "Station entry", "HQ inbox"],
-  HQ_REVIEWER: ["Settings", "HQ inbox"],
-  HQ_VERIFIER: ["Settings", "HQ inbox", "Consolidated SITREP", "Weekly export"],
+  STATION_INPUTTER: ["Station entry", "Settings"],
+  CLUSTER_SUPERVISOR: ["Station entry", "HQ inbox", "Settings"],
+  HQ_REVIEWER: ["HQ inbox", "Settings"],
+  HQ_VERIFIER: ["HQ inbox", "Consolidated SITREP", "Weekly export", "Settings"],
   HQ_AUTHORISER: [
-    "Settings",
     "HQ inbox",
     "Consolidated SITREP",
     "Weekly export",
+    "Settings",
   ],
   ADMIN: [
-    "Settings",
     "Station entry",
     "HQ inbox",
     "Consolidated SITREP",
     "Weekly export",
+    "Settings",
     "Admin",
   ],
 };

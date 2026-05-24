@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Drawer, DrawerToggle, useDrawer } from "@/components/layout/Drawer";
-import { DayRecordWorkspace } from "@/components/station/DayRecordWorkspace";
+import { DayRecordRouter } from "@/components/station/DayRecordRouter";
 import { PreviousDaysPanel } from "@/components/station/PreviousDaysPanel";
 import { formatDateInput, cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ function todayString() {
   return formatDateInput(new Date());
 }
 
-export function StationInputterApp() {
+export function StationInputterApp({ isAdmin = false }: { isAdmin?: boolean }) {
   const today = todayString();
   const [view, setView] = useState<"today" | "history">("today");
   const [selectedDate, setSelectedDate] = useState(today);
@@ -101,9 +101,10 @@ export function StationInputterApp() {
         </Drawer>
 
         <div className="min-w-0 flex-1">
-          <DayRecordWorkspace
+          <DayRecordRouter
             reportDate={activeDate}
             isToday={activeDate === todayMeta}
+            isAdmin={isAdmin}
           />
         </div>
       </div>

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-helpers";
 import { PERMISSIONS } from "@/lib/rbac";
-import { ReportStatus, DailyEntryType } from "@prisma/client";
+import { ReportStatus } from "@prisma/client";
 import { parseReportDate } from "@/lib/utils";
+import {
+  buildWeeklyStatisticsWorkbook,
+  listDatesInclusive,
+  WEEKLY_EXPORT_STATUSES,
+} from "@/lib/exports/weekly-matrix";
 
 export async function GET(request: Request) {
   const user = await requirePermission(PERMISSIONS.WEEKLY_EXPORT);
@@ -22,62 +26,57 @@ export async function GET(request: Request) {
 
   const fromDate = parseReportDate(from);
   const toDate = parseReportDate(to);
+  if (fromDate > toDate) {
+    return NextResponse.json(
+      { error: "from must be on or before to" },
+      { status: 400 },
+    );
+  }
+
+  const dates = listDatesInclusive(from, to);
+  if (dates.length > 31) {
+    return NextResponse.json(
+      { error: "Date range cannot exceed 31 days" },
+      { status: 400 },
+    );
+  }
 
   const stations = await prisma.borderStation.findMany({
     where: { active: true },
     orderBy: { name: "asc" },
+    select: { id: true, name: true, code: true },
   });
 
   const reports = await prisma.stationDailyReport.findMany({
     where: {
       reportDate: { gte: fromDate, lte: toDate },
-      status: ReportStatus.approved,
+      status: { in: WEEKLY_EXPORT_STATUSES },
     },
-    include: { entries: true, station: true },
+    select: {
+      stationId: true,
+      reportDate: true,
+      entries: {
+        select: { entryType: true, male: true, female: true },
+      },
+    },
   });
 
-  const dates: string[] = [];
-  for (let d = new Date(fromDate); d <= toDate; d.setUTCDate(d.getUTCDate() + 1)) {
-    dates.push(d.toISOString().slice(0, 10));
-  }
-
-  const arrivalTotals = new Map<string, number>();
-  for (const r of reports) {
-    const key = `${r.stationId}:${r.reportDate.toISOString().slice(0, 10)}`;
-    const total = r.entries
-      .filter((e) => e.entryType === DailyEntryType.arrival)
-      .reduce((s, e) => s + e.male + e.female, 0);
-    arrivalTotals.set(key, total);
-  }
-
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Weekly Arrivals");
-  sheet.addRow(["Station", "Code", ...dates, "Week Total"]);
-
-  let grandTotal = 0;
-  for (const station of stations) {
-    let rowTotal = 0;
-    const row: (string | number)[] = [station.name, station.code];
-    for (const date of dates) {
-      const key = `${station.id}:${date}`;
-      const val = arrivalTotals.get(key) ?? 0;
-      row.push(val);
-      rowTotal += val;
-    }
-    row.push(rowTotal);
-    grandTotal += rowTotal;
-    sheet.addRow(row);
-  }
-
-  sheet.addRow([]);
-  sheet.addRow(["GRAND TOTAL", "", ...dates.map(() => ""), grandTotal]);
+  const workbook = await buildWeeklyStatisticsWorkbook({
+    from,
+    to,
+    stations,
+    reports,
+    sheetTitle: "Weekly Statistics",
+  });
 
   const buffer = await workbook.xlsx.writeBuffer();
+  const filename = `WEEKLY STATISTICS ${from} to ${to}.xlsx`;
+
   return new NextResponse(buffer, {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="weekly-sitrep-${from}-${to}.xlsx"`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
 }

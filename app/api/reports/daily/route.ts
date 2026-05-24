@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth-helpers";
 import { canAccessStation, can, PERMISSIONS } from "@/lib/rbac";
 import {
-  getDayRecord,
+  getDayRecordForUser,
   ensureDayRecord,
   updateDayRemarks,
   todayDateString,
@@ -26,7 +26,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const report = await getDayRecord(stationId, date);
+  const report = await getDayRecordForUser(
+    stationId,
+    date,
+    Number(user.id),
+  );
 
   if (!report) {
     const station = await prisma.borderStation.findUnique({
@@ -36,13 +40,23 @@ export async function GET(request: Request) {
       reportDate: date,
       status: "draft",
       entries: [],
+      incidents: [],
       entryCount: 0,
+      inadmissibleCount: 0,
       station,
       isToday: date === todayDateString(),
       summary: {
         arrivals: { rows: [], male: 0, female: 0, total: 0 },
         departures: { rows: [], male: 0, female: 0, total: 0 },
         specialCategories: [],
+        air: {
+          flightArrivals: { flights: 0, passengers: 0 },
+          flightDepartures: { flights: 0, passengers: 0 },
+          deportees: 0,
+          returned: 0,
+          offloaded: 0,
+          denied: 0,
+        },
       },
     });
   }
@@ -72,7 +86,18 @@ export async function PATCH(request: Request) {
     reportDate,
   );
 
-  await updateDayRemarks(report.id, body);
-  const full = await getDayRecord(user.stationId, reportDate);
+  await updateDayRemarks(report.id, {
+    staffOnDuty: body.staffOnDuty,
+    medicalScreening: body.medicalScreening,
+    generalRemarks: body.generalRemarks,
+    urgentMatters: body.urgentMatters,
+    inadmissibleCount: body.inadmissibleCount,
+    staffLeaveNotes: body.staffLeaveNotes,
+  });
+  const full = await getDayRecordForUser(
+    user.stationId,
+    reportDate,
+    Number(user.id),
+  );
   return NextResponse.json(full);
 }
