@@ -22,7 +22,7 @@ export function Tabs({
   return (
     <div
       className={cn(
-        "flex gap-1 overflow-x-auto border-b border-zinc-300 bg-white px-1",
+        "flex gap-1 overflow-x-auto border-b border-zinc-250 bg-white px-2 py-0.5",
         className,
       )}
       role="tablist"
@@ -37,18 +37,18 @@ export function Tabs({
             aria-selected={isActive}
             onClick={() => onChange(tab.id)}
             className={cn(
-              "shrink-0 border-b-2 px-4 py-3 text-sm font-semibold transition-colors",
+              "shrink-0 border-b-2 px-4 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-emerald-800/40 relative cursor-pointer",
               isActive
-                ? "border-emerald-800 text-emerald-900"
-                : "border-transparent text-zinc-600 hover:border-zinc-300 hover:text-zinc-900",
+                ? "border-emerald-800 text-emerald-950 bg-emerald-50/40"
+                : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
             )}
           >
             {tab.label}
             {tab.badge !== undefined && tab.badge > 0 ? (
               <span
                 className={cn(
-                  "ml-2 rounded-full px-2 py-0.5 text-xs",
-                  isActive ? "bg-emerald-800 text-white" : "bg-zinc-200 text-zinc-800",
+                  "ml-2 rounded-full px-2 py-0.5 text-xxs font-extrabold shadow-sm transition",
+                  isActive ? "bg-emerald-800 text-white" : "bg-zinc-100 text-zinc-700",
                 )}
               >
                 {tab.badge}
@@ -71,7 +71,7 @@ export function TabPanel({
   return (
     <div
       className={cn(
-        "rounded-b-lg border border-t-0 border-zinc-300 bg-white p-4 shadow-sm",
+        "rounded-b-xl border border-t-0 border-zinc-200 bg-white p-5 shadow-sm transition-all duration-200",
         className,
       )}
     >

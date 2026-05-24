@@ -8,6 +8,8 @@ import { RejectionBanner } from "@/components/station/RejectionBanner";
 import type { DayData, DailyEntryRow } from "@/components/station/shared-day-types";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import { CheckCircle, AlertCircle, Clock, ListFilter, Calendar, Send } from "lucide-react";
 import {
   AIR_MODULE_GROUPS,
   ENTRY_LABELS,
@@ -374,40 +376,51 @@ export function EntebbeDayWorkspace({
           {message}
         </p>
       )}
-
-      <div className="rounded-lg border border-zinc-300 shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
         <Tabs
           tabs={workTabs}
           active={workTab}
           onChange={(id) => setWorkTab(id as WorkTabId)}
         />
 
-        {workTab === "entry" && (
-          <TabPanel>
+        {/* Persistent Tab Panels */}
+
+        {/* Entry Form Panel */}
+        <div className={cn(workTab !== "entry" && "hidden")}>
+          <TabPanel className="space-y-4">
             {isSubmitted && (
-              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                Day submitted — new records need HQ approval unless you are an
-                admin.
+              <div className="rounded-lg border border-amber-250 bg-amber-50/70 px-4 py-3 text-sm text-amber-955 flex gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-bold">Day report already submitted to HQ</p>
+                  <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                    New records require HQ correction approval unless you are an admin.
+                  </p>
+                </div>
               </div>
             )}
             {!canAddNew && isSubmitted && (
-              <p className="text-sm text-zinc-700">
-                Only edits to existing records are allowed (use Activity log).
-              </p>
+              <div className="py-6 text-center space-y-2">
+                <ListFilter className="h-8 w-8 mx-auto text-zinc-400" />
+                <p className="text-sm font-medium text-zinc-650">
+                  Adding new records is disabled. Use the <strong className="text-emerald-900">Activity log</strong> tab to edit or request removal.
+                </p>
+              </div>
             )}
             {(canAddNew || editingEntryId) && (
-              <form onSubmit={saveEntry} className="space-y-4">
+              <form onSubmit={saveEntry} className="space-y-5">
                 <div className="flex flex-wrap gap-2">
                   {AIR_MODULE_GROUPS.map((g) => (
                     <button
                       key={g.id}
                       type="button"
                       onClick={() => selectModule(g.id)}
-                      className={`rounded-md border px-3 py-2 text-sm font-semibold ${
+                      className={cn(
+                        "rounded-lg border px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer",
                         airModule === g.id
-                          ? "border-emerald-800 bg-emerald-800 text-white"
-                          : "border-zinc-300 bg-zinc-50"
-                      }`}
+                          ? "border-emerald-800 bg-emerald-800 text-white shadow-md shadow-emerald-800/10"
+                          : "border-zinc-300 bg-zinc-50 text-zinc-800 hover:bg-zinc-100"
+                      )}
                     >
                       {g.label}
                     </button>
@@ -415,19 +428,20 @@ export function EntebbeDayWorkspace({
                 </div>
 
                 {airModule === "flights" && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2.5">
                       {(["flight_arrival", "flight_departure"] as const).map(
                         (t) => (
                           <button
                             key={t}
                             type="button"
                             onClick={() => setEntryType(t)}
-                            className={`rounded border px-3 py-2 text-sm font-semibold ${
+                            className={cn(
+                              "rounded-lg border px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer",
                               entryType === t
-                                ? "border-emerald-800 bg-emerald-800 text-white"
-                                : "border-zinc-300"
-                            }`}
+                                ? "border-emerald-800 bg-emerald-800 text-white shadow-md"
+                                : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+                            )}
                           >
                             {ENTRY_LABELS[t]}
                           </button>
@@ -436,9 +450,9 @@ export function EntebbeDayWorkspace({
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                       <div>
-                        <label className="text-sm font-semibold">Shift</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">Shift</label>
                         <select
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={shift}
                           onChange={(e) =>
                             setShift(e.target.value as "B" | "D")
@@ -449,11 +463,11 @@ export function EntebbeDayWorkspace({
                         </select>
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Flight no.
                         </label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2 uppercase"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none uppercase placeholder:text-zinc-400"
                           value={flightNumber}
                           onChange={(e) => setFlightNumber(e.target.value)}
                           placeholder="ET338"
@@ -461,13 +475,13 @@ export function EntebbeDayWorkspace({
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           {entryType === "flight_arrival"
                             ? "From (city)"
                             : "To (city)"}
                         </label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none placeholder:text-zinc-400"
                           value={route}
                           onChange={(e) => setRoute(e.target.value)}
                           placeholder="Addis Ababa"
@@ -475,44 +489,45 @@ export function EntebbeDayWorkspace({
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Passengers
                         </label>
                         <input
                           type="number"
                           min={1}
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={male}
                           onChange={(e) => setMale(Number(e.target.value) || 0)}
                           required
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">Time</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">Time</label>
                         <input
                           type="datetime-local"
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={recordedAt}
                           onChange={(e) => setRecordedAt(e.target.value)}
                         />
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {airModule === "deportees" && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2.5">
                       {(["deportee", "returned_person"] as const).map((t) => (
                         <button
                           key={t}
                           type="button"
                           onClick={() => setEntryType(t)}
-                          className={`rounded border px-3 py-2 text-sm font-semibold ${
+                          className={cn(
+                            "rounded-lg border px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer",
                             entryType === t
-                              ? "border-emerald-800 bg-emerald-800 text-white"
-                              : "border-zinc-300"
-                          }`}
+                              ? "border-emerald-800 bg-emerald-800 text-white shadow-md"
+                              : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+                          )}
                         >
                           {ENTRY_LABELS[t]}
                         </button>
@@ -520,25 +535,25 @@ export function EntebbeDayWorkspace({
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="text-sm font-semibold">Name</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">Name</label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={personName}
                           onChange={(e) => setPersonName(e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Passport no.
                         </label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={passportNo}
                           onChange={(e) => setPassportNo(e.target.value)}
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Nationality (optional)
                         </label>
                         <NationalitySelect
@@ -548,11 +563,11 @@ export function EntebbeDayWorkspace({
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Case details
                         </label>
                         <textarea
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none placeholder:text-zinc-400"
                           rows={3}
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
@@ -561,22 +576,23 @@ export function EntebbeDayWorkspace({
                         />
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {airModule === "denied" && (
-                  <>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2.5">
                       {(["offloaded", "denied_entry"] as const).map((t) => (
                         <button
                           key={t}
                           type="button"
                           onClick={() => setEntryType(t)}
-                          className={`rounded border px-3 py-2 text-sm font-semibold ${
+                          className={cn(
+                            "rounded-lg border px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer",
                             entryType === t
-                              ? "border-emerald-800 bg-emerald-800 text-white"
-                              : "border-zinc-300"
-                          }`}
+                              ? "border-emerald-800 bg-emerald-800 text-white shadow-md"
+                              : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+                          )}
                         >
                           {ENTRY_LABELS[t]}
                         </button>
@@ -584,35 +600,35 @@ export function EntebbeDayWorkspace({
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="text-sm font-semibold">Name</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">Name</label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={personName}
                           onChange={(e) => setPersonName(e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Passport no.
                         </label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           value={passportNo}
                           onChange={(e) => setPassportNo(e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Flight (optional)
                         </label>
                         <input
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2 uppercase"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none uppercase"
                           value={flightNumber}
                           onChange={(e) => setFlightNumber(e.target.value)}
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-semibold">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
                           Nationality (optional)
                         </label>
                         <NationalitySelect
@@ -622,9 +638,9 @@ export function EntebbeDayWorkspace({
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="text-sm font-semibold">Details</label>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">Details</label>
                         <textarea
-                          className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                          className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                           rows={3}
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
@@ -632,27 +648,39 @@ export function EntebbeDayWorkspace({
                         />
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {isSubmitted && !isAdmin && editingEntryId && (
-                  <input
-                    className="w-full rounded border border-zinc-400 px-3 py-2"
-                    placeholder="Correction reason (required)"
-                    value={correctionReason}
-                    onChange={(e) => setCorrectionReason(e.target.value)}
-                  />
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">Correction Reason (required)</label>
+                    <input
+                      className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
+                      placeholder="Specify the reason for this correction request…"
+                      value={correctionReason}
+                      onChange={(e) => setCorrectionReason(e.target.value)}
+                      required
+                    />
+                  </div>
                 )}
 
-                <div className="flex flex-wrap gap-2">
-                  <Button type="submit">
+                <div className="flex flex-wrap gap-2.5 pt-2 border-t border-zinc-200">
+                  <Button 
+                    type="submit"
+                    className="rounded-lg font-bold py-2.5 px-6 shadow-sm active:scale-[0.98] transition-all bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer"
+                  >
                     {editingEntryId ? "Save changes" : "Save record"}
                   </Button>
                   {editingEntryId && (
-                    <Button type="button" variant="secondary" onClick={() => {
-                      setEditingEntryId(null);
-                      resetEntryForm();
-                    }}>
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      className="rounded-lg shadow-sm font-bold cursor-pointer hover:bg-zinc-100"
+                      onClick={() => {
+                        setEditingEntryId(null);
+                        resetEntryForm();
+                      }}
+                    >
                       Cancel
                     </Button>
                   )}
@@ -660,47 +688,55 @@ export function EntebbeDayWorkspace({
               </form>
             )}
           </TabPanel>
-        )}
+        </div>
 
-        {workTab === "log" && (
+        {/* Activity Log Panel */}
+        <div className={cn(workTab !== "log" && "hidden")}>
           <TabPanel>
             {loading ? (
-              <p className="text-sm text-zinc-600">Loading…</p>
+              <p className="text-sm font-semibold text-zinc-550">Loading Activity Log…</p>
             ) : (
               <div className="space-y-6">
                 <div>
-                  <h4 className="mb-2 text-sm font-bold text-zinc-900">
-                    Entries
+                  <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-600">
+                    Registered Entries
                   </h4>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b bg-zinc-100 text-left">
-                        <th className="p-2">Time</th>
-                        <th className="p-2">Record</th>
-                        <th className="p-2">Actions</th>
+                      <tr className="border-b bg-zinc-50 text-left border-zinc-200">
+                        <th className="p-2.5 text-xs font-bold uppercase tracking-wider text-zinc-500">Time</th>
+                        <th className="p-2.5 text-xs font-bold uppercase tracking-wider text-zinc-500">Record Description</th>
+                        <th className="p-2.5 w-24" />
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-100">
+                      {sortedEntries.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="p-6 text-center text-zinc-500 font-semibold">
+                            No flight or passenger records logged yet.
+                          </td>
+                        </tr>
+                      )}
                       {sortedEntries.map((e) => (
-                        <tr key={e.id} className="border-b">
-                          <td className="p-2">{formatTime(e.recordedAt)}</td>
-                          <td className="p-2">{entryLabel(e)}</td>
-                          <td className="p-2">
-                            <div className="flex gap-2">
+                        <tr key={e.id} className="hover:bg-zinc-50/45 transition">
+                          <td className="p-2.5 tabular-nums text-zinc-600 font-medium">{formatTime(e.recordedAt)}</td>
+                          <td className="p-2.5 font-semibold text-zinc-950">{entryLabel(e)}</td>
+                          <td className="p-2.5 text-right">
+                            <div className="inline-flex gap-2">
                               <button
                                 type="button"
-                                className="text-xs font-semibold text-emerald-800"
+                                className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 hover:text-emerald-950 hover:underline cursor-pointer"
                                 onClick={() => startEditEntry(e)}
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
-                                className="text-xs font-semibold text-red-700"
+                                className="text-xs font-extrabold uppercase tracking-wider text-red-700 hover:text-red-950 hover:underline cursor-pointer"
                                 onClick={() => removeEntry(e.id)}
                               >
                                 {isSubmitted && !isAdmin
-                                  ? "Request remove"
+                                  ? "Req remove"
                                   : "Remove"}
                               </button>
                             </div>
@@ -711,27 +747,28 @@ export function EntebbeDayWorkspace({
                   </table>
                 </div>
                 <div>
-                  <h4 className="mb-2 text-sm font-bold text-zinc-900">
-                    Occurrences
+                  <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-650">
+                    Logged Incident & Shift Occurrences
                   </h4>
                   {(data?.incidents ?? []).length === 0 ? (
-                    <p className="text-sm text-zinc-600">None logged.</p>
+                    <p className="text-sm font-semibold text-zinc-500 bg-zinc-50/50 p-4 rounded-xl border border-zinc-150 text-center">No occurrences logged yet.</p>
                   ) : (
                     <ul className="space-y-2">
                       {(data?.incidents ?? []).map((i) => (
                         <li
                           key={i.id}
-                          className="rounded border border-zinc-200 p-3 text-sm"
+                          className="rounded-xl border border-zinc-200 bg-white p-4 text-sm shadow-sm flex items-start justify-between gap-4"
                         >
-                          <span className="font-semibold uppercase text-zinc-700">
-                            {i.incidentType?.replace("occurrence_", "Shift ") ??
-                              "Occurrence"}
-                          </span>
-                          <p className="mt-1">{i.description}</p>
+                          <div>
+                            <span className="font-extrabold uppercase tracking-wider text-xxs text-zinc-500 bg-zinc-100 border px-2 py-0.5 rounded">
+                              {i.incidentType?.replace("occurrence_", "") ?? "Occurrence"} Shift
+                            </span>
+                            <p className="mt-2 text-zinc-900 font-medium">{i.description}</p>
+                          </div>
                           {isDraft && (
                             <button
                               type="button"
-                              className="mt-2 text-xs font-semibold text-red-700"
+                              className="text-xs font-extrabold uppercase tracking-wider text-red-700 hover:underline cursor-pointer shrink-0 mt-0.5"
                               onClick={() => removeIncident(i.id)}
                             >
                               Remove
@@ -745,15 +782,15 @@ export function EntebbeDayWorkspace({
               </div>
             )}
           </TabPanel>
-        )}
+        </div>
 
-        {workTab === "occurrences" && (
-          <TabPanel>
+        {/* Occurrences Tab */}
+        <div className={cn(workTab !== "occurrences" && "hidden")}>
+          <TabPanel className="space-y-4">
             {isSubmitted ? (
-              <p className="text-sm text-zinc-700">
-                Add new occurrences via HQ correction workflow (not yet on
-                submitted days). Edit day remarks on Submit tab.
-              </p>
+              <div className="rounded-lg border border-amber-250 bg-amber-50/70 px-4 py-3 text-sm text-amber-955">
+                Add new occurrences via HQ correction workflow (not directly on submitted day). Edit general remarks on the Submit tab.
+              </div>
             ) : (
               <form onSubmit={addOccurrence} className="space-y-4 max-w-xl">
                 <div className="flex gap-2">
@@ -762,122 +799,150 @@ export function EntebbeDayWorkspace({
                       key={s}
                       type="button"
                       onClick={() => setOccShift(s)}
-                      className={`rounded border px-3 py-2 text-sm font-semibold ${
+                      className={cn(
+                        "rounded-lg border px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] cursor-pointer",
                         occShift === s
-                          ? "border-emerald-800 bg-emerald-800 text-white"
-                          : "border-zinc-300"
-                      }`}
+                          ? "border-emerald-800 bg-emerald-800 text-white shadow-md"
+                          : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+                      )}
                     >
                       {s === "day" ? "Day shift" : "Night shift"}
                     </button>
                   ))}
                 </div>
-                <textarea
-                  className="w-full rounded border border-zinc-400 px-3 py-2"
-                  rows={4}
-                  placeholder="Occurrence narrative (or NIL)"
-                  value={occDescription}
-                  onChange={(e) => setOccDescription(e.target.value)}
-                  required
-                />
-                <input
-                  className="w-full rounded border border-zinc-400 px-3 py-2"
-                  placeholder="Passport no. (optional)"
-                  value={occPassport}
-                  onChange={(e) => setOccPassport(e.target.value)}
-                />
-                <input
-                  className="w-full rounded border border-zinc-400 px-3 py-2"
-                  placeholder="Person name (optional)"
-                  value={occName}
-                  onChange={(e) => setOccName(e.target.value)}
-                />
-                <Button type="submit">Log occurrence</Button>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-650">Occurrence Narrative</label>
+                  <textarea
+                    className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none placeholder:text-zinc-400"
+                    rows={4}
+                    placeholder="Occurrence details (or NIL if none)…"
+                    value={occDescription}
+                    onChange={(e) => setOccDescription(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-650">Passport no. (optional)</label>
+                    <input
+                      className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
+                      value={occPassport}
+                      onChange={(e) => setOccPassport(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-650">Person name (optional)</label>
+                    <input
+                      className="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
+                      value={occName}
+                      onChange={(e) => setOccName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  type="submit"
+                  className="rounded-lg font-bold py-2.5 px-6 shadow-sm active:scale-[0.98] transition-all bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer"
+                >
+                  Log occurrence
+                </Button>
               </form>
             )}
           </TabPanel>
+        </div>
+
+        {/* Day Totals Panel */}
+        {data?.summary?.air && (
+          <div className={cn(workTab !== "totals" && "hidden")}>
+            <TabPanel className="border-0 bg-transparent p-0 shadow-none">
+              <EntebbeSummaryTable
+                stationName={data.station?.name ?? "ENTEBBE"}
+                reportDate={reportDate}
+                air={data.summary.air}
+                inadmissibleCount={data.inadmissibleCount ?? 0}
+                incidentCount={data.incidents?.length ?? 0}
+              />
+            </TabPanel>
+          </div>
         )}
 
-        {workTab === "totals" && data?.summary?.air && (
-          <TabPanel className="border-0 bg-transparent p-0 shadow-none">
-            <EntebbeSummaryTable
-              stationName={data.station?.name ?? "ENTEBBE"}
-              reportDate={reportDate}
-              air={data.summary.air}
-              inadmissibleCount={data.inadmissibleCount ?? 0}
-              incidentCount={data.incidents?.length ?? 0}
-            />
-          </TabPanel>
-        )}
-
-        {workTab === "day" && (
-          <TabPanel>
+        {/* Submit Day Panel */}
+        <div className={cn(workTab !== "day" && "hidden")}>
+          <TabPanel className="space-y-5">
             <div className="space-y-4 max-w-2xl">
-              <label className="block text-sm">
-                <span className="font-semibold">Staff on duty</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-655">
+                Staff on duty
                 <input
                   type="number"
                   min={0}
-                  className="mt-1 w-full max-w-xs rounded border border-zinc-400 px-3 py-2"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                   value={staffOnDuty}
                   onChange={(e) =>
                     setStaffOnDuty(Number(e.target.value) || 0)
                   }
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold">Staff on leave (by shift)</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-655">
+                Staff on leave (by shift)
                 <textarea
-                  className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none placeholder:text-zinc-400"
                   rows={3}
                   value={staffLeaveNotes}
                   onChange={(e) => setStaffLeaveNotes(e.target.value)}
                   placeholder="Shift D: … Shift B: …"
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold">Inadmissible count</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-655">
+                Inadmissible count
                 <input
                   type="number"
                   min={0}
-                  className="mt-1 w-full max-w-xs rounded border border-zinc-400 px-3 py-2"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                   value={inadmissibleCount}
                   onChange={(e) =>
                     setInadmissibleCount(Number(e.target.value) || 0)
                   }
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold">Urgent matters</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-655">
+                Urgent matters
                 <textarea
-                  className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                   rows={2}
                   value={urgentMatters}
                   onChange={(e) => setUrgentMatters(e.target.value)}
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold">General remarks</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-655">
+                General remarks
                 <textarea
-                  className="mt-1 w-full rounded border border-zinc-400 px-3 py-2"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
                   rows={2}
                   value={generalRemarks}
                   onChange={(e) => setGeneralRemarks(e.target.value)}
                 />
               </label>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="secondary" onClick={saveDayFields}>
+              <div className="flex flex-wrap gap-2.5 pt-2 border-t border-zinc-200">
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  className="rounded-lg shadow-sm font-bold cursor-pointer hover:bg-zinc-100"
+                  onClick={saveDayFields}
+                >
                   {isSubmitted ? "Save day modifications" : "Save day details"}
                 </Button>
                 {isDraft && (
-                  <Button type="button" onClick={submitDay}>
+                  <Button 
+                    type="button" 
+                    className="rounded-lg font-bold py-2.5 px-6 shadow-md active:scale-[0.98] transition-all bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer"
+                    onClick={submitDay}
+                  >
                     Submit {reportDate} to HQ
                   </Button>
                 )}
               </div>
             </div>
           </TabPanel>
-        )}
+        </div>
       </div>
     </div>
   );

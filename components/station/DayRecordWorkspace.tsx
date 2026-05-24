@@ -7,12 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { DailySummaryTable } from "@/components/forms/DailySummaryTable";
 import { RejectionBanner } from "@/components/station/RejectionBanner";
-import { formatDateInput } from "@/lib/utils";
-import {
-  ENTRY_LABELS,
-  entryTypesForProfile,
-  ReportingProfile,
-} from "@/lib/station/entry-config";
+import { formatDateInput, cn } from "@/lib/utils";
+import { CheckCircle, AlertCircle, Sparkles, Clock, ListFilter, BarChart3, Send } from "lucide-react";
+import { ENTRY_LABELS, entryTypesForProfile, ReportingProfile } from "@/lib/station/entry-config";
 import type { DayEntryPayload, DayEntryUpdatePayload, DayEntryTypeId } from "@/types/reports";
 
 type EntryType = Extract<
@@ -184,7 +181,7 @@ export function DayRecordWorkspace({
     });
     const json = await res.json();
     if (!res.ok) {
-      setMessage(json.error ?? json.error ?? "Could not save entry");
+      setMessage(json.error ?? "Could not save entry");
       return;
     }
     setData(json);
@@ -193,7 +190,7 @@ export function DayRecordWorkspace({
     setNationalityCode("");
     setNotes("");
     setRecordedAt(nowLocalDatetime());
-    setMessage(`${ENTRY_LABELS[entryType]} saved for ${reportDate}.`);
+    setMessage(`${ENTRY_LABELS[entryType]} saved successfully.`);
     setWorkTab("log");
   }
 
@@ -256,8 +253,8 @@ export function DayRecordWorkspace({
     setMessage(
       json.message ??
         (isSubmitted && !isAdmin
-          ? "Update sent for HQ approval."
-          : "Entry updated. Totals reconciled."),
+          ? "Update submitted to HQ verifiers."
+          : "Entry successfully updated and totals reconciled."),
     );
     setWorkTab("log");
   }
@@ -285,7 +282,7 @@ export function DayRecordWorkspace({
     setData(json);
     setMessage(
       json.message ??
-        (isSubmitted && !isAdmin ? "Removal request sent." : "Entry removed."),
+        (isSubmitted && !isAdmin ? "Removal request successfully submitted to HQ." : "Entry successfully removed."),
     );
   }
 
@@ -307,7 +304,7 @@ export function DayRecordWorkspace({
       return;
     }
     setData(json);
-    setMessage("Remarks saved.");
+    setMessage("Remarks and metadata successfully saved.");
   }
 
   async function submitDay() {
@@ -323,7 +320,7 @@ export function DayRecordWorkspace({
       return;
     }
     await load();
-    setMessage(`Day report for ${reportDate} submitted to HQ.`);
+    setMessage(`Day report for ${reportDate} successfully submitted to HQ.`);
   }
 
   const entryCount = data?.entries?.length ?? 0;
@@ -337,11 +334,12 @@ export function DayRecordWorkspace({
             key={t}
             type="button"
             onClick={() => setEntryType(t)}
-            className={`rounded-md border px-3 py-2.5 text-sm font-semibold ${
+            className={cn(
+              "rounded-lg border px-3 py-2.5 text-sm font-bold transition-all active:scale-[0.98] cursor-pointer",
               entryType === t
-                ? "border-emerald-800 bg-emerald-800 text-white"
-                : "border-zinc-300 bg-zinc-50 text-zinc-900"
-            }`}
+                ? "border-emerald-800 bg-emerald-800 text-white shadow-md shadow-emerald-800/10"
+                : "border-zinc-300 bg-zinc-50 text-zinc-900 hover:bg-zinc-100"
+            )}
           >
             {ENTRY_LABELS[t]}
           </button>
@@ -349,7 +347,7 @@ export function DayRecordWorkspace({
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-semibold text-zinc-900">
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-600">
             Nationality
             {entryType !== "arrival" && entryType !== "departure"
               ? " (optional)"
@@ -363,43 +361,43 @@ export function DayRecordWorkspace({
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-semibold text-zinc-900">
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-600">
             Male
           </label>
           <input
             type="number"
             min={0}
-            className="w-full rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
             value={male}
             onChange={(e) => setMale(Number(e.target.value) || 0)}
           />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-semibold text-zinc-900">
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-600">
             Female
           </label>
           <input
             type="number"
             min={0}
-            className="w-full rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-950 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
             value={female}
             onChange={(e) => setFemale(Number(e.target.value) || 0)}
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-semibold text-zinc-900">
+          <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-zinc-600">
             Time
           </label>
           <input
             type="datetime-local"
-            className="w-full max-w-xs rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+            className="w-full max-w-xs rounded-lg border border-zinc-300 bg-white px-3.5 py-2 text-sm text-zinc-955 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
             value={recordedAt}
             onChange={(e) => setRecordedAt(e.target.value)}
           />
         </div>
       </div>
       <input
-        className="w-full rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+        className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
         placeholder="Note (optional)"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -435,21 +433,25 @@ export function DayRecordWorkspace({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-300 bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-250 bg-white px-5 py-4 shadow-sm">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-600">
+          <p className="text-xxs font-extrabold uppercase tracking-widest text-zinc-500">
             {isToday ? "Today’s record" : "Past day record"}
           </p>
-          <p className="text-lg font-bold text-zinc-900">{reportDate}</p>
-          <p className="text-sm font-medium text-zinc-700">
-            {data?.station?.name ?? "Station"} ·{" "}
-            <span className="uppercase text-emerald-800">
+          <p className="text-xl font-black text-zinc-900 tracking-tight mt-0.5">{reportDate}</p>
+          <p className="text-xs font-semibold text-zinc-650 mt-1 flex items-center gap-2">
+            <span>{data?.station?.name ?? "Station"}</span>
+            <span className="h-3 w-px bg-zinc-300" />
+            <span className={cn(
+              "uppercase font-extrabold tracking-wider",
+              data?.status === "approved" ? "text-emerald-800" : "text-amber-800"
+            )}>
               {data?.status ?? "draft"}
             </span>
           </p>
         </div>
         {loading && (
-          <span className="text-sm font-medium text-zinc-600">Loading…</span>
+          <span className="text-xs font-bold text-zinc-500 animate-pulse bg-zinc-100 border px-2.5 py-1 rounded-lg">Loading…</span>
         )}
       </div>
 
@@ -461,148 +463,173 @@ export function DayRecordWorkspace({
       )}
 
       {message && (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-950">
-          {message}
-        </p>
+        <div className="flex gap-2.5 rounded-xl border border-emerald-250 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-950 shadow-sm">
+          <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" />
+          <span>{message}</span>
+        </div>
       )}
 
-      <div className="rounded-lg border border-zinc-300 shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
         <Tabs tabs={workTabs} active={workTab} onChange={(id) => setWorkTab(id as WorkTabId)} />
 
-        {workTab === "entry" && (
-          <TabPanel className="overflow-visible">
+        {/* Persistent tab wrappers to stabilize DOM and scroll positions */}
+        
+        {/* Entry / Form Tab */}
+        <div className={cn(workTab !== "entry" && "hidden")}>
+          <TabPanel className="overflow-visible space-y-4">
             {isSubmitted && (
-              <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                <p className="font-semibold">
-                  Day submitted — cannot submit again
-                </p>
-                <p className="mt-1">
-                  {isAdmin
-                    ? "You may add new entries directly. Others must edit existing lines (HQ approves their changes)."
-                    : "Add new entries is disabled. Edit existing entries from the log; HQ approves before totals update."}
-                </p>
-                {pendingCount > 0 && (
-                  <p className="mt-1 font-medium">
-                    {pendingCount} pending change(s) awaiting HQ.
+              <div className="rounded-lg border border-amber-250 bg-amber-50/70 px-4 py-3 text-sm text-amber-950 flex gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="font-bold">
+                    Day report already submitted to HQ
                   </p>
-                )}
+                  <p className="mt-1 text-xs text-amber-900 leading-relaxed">
+                    {isAdmin
+                      ? "You may add new entries directly as an admin. Others must request corrections (HQ review approved)."
+                      : "Adding new entries is restricted. To edit/remove, click 'Edit' or 'Request remove' on rows in the Entry log. HQ reviews corrections."}
+                  </p>
+                  {pendingCount > 0 && (
+                    <p className="mt-2 font-semibold text-xs flex items-center gap-1.5 text-amber-950">
+                      <span className="inline-block h-2 w-2 rounded-full bg-amber-600 animate-ping" />
+                      {pendingCount} pending change(s) currently awaiting HQ approval.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
             {editingEntryId ? (
               <form onSubmit={saveEdit} className="space-y-4">
-                <p className="text-sm font-semibold text-zinc-900">
-                  Editing entry #{editingEntryId}
-                  {isSubmitted && !isAdmin && " (HQ must approve)"}
-                </p>
+                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-700 bg-zinc-50 border p-2.5 rounded-lg">
+                  <Clock className="h-4 w-4 text-zinc-500" />
+                  <span>
+                    Editing entry #{editingEntryId} {isSubmitted && !isAdmin && "(Requires HQ approval)"}
+                  </span>
+                </div>
                 {entryFields}
                 {isSubmitted && !isAdmin && (
-                  <div>
-                    <label className="mb-1 block text-sm font-semibold text-zinc-900">
-                      Reason for change
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600">
+                      Reason for correction
                     </label>
                     <textarea
                       required
                       rows={2}
-                      className="w-full rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+                      className="w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none"
+                      placeholder="Specify why this entry is being updated…"
                       value={correctionReason}
                       onChange={(e) => setCorrectionReason(e.target.value)}
                     />
                   </div>
                 )}
-                <div className="flex gap-2">
-                  <Button type="submit">
+                <div className="flex gap-2.5 pt-2 border-t border-zinc-200">
+                  <Button 
+                    type="submit"
+                    className="rounded-lg font-bold py-2.5 px-6 shadow-sm active:scale-[0.98] transition-all bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer"
+                  >
                     {isSubmitted && !isAdmin
-                      ? "Submit update for approval"
+                      ? "Submit correction to HQ"
                       : "Save changes"}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={cancelEdit}>
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    className="rounded-lg shadow-sm font-bold cursor-pointer hover:bg-zinc-100"
+                    onClick={cancelEdit}
+                  >
                     Cancel
                   </Button>
                 </div>
               </form>
             ) : canAddNew ? (
               <form onSubmit={addEntry} className="space-y-4">
-                <p className="text-sm text-zinc-700">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   {isSubmitted && isAdmin
-                    ? `Add a new batch to submitted day ${reportDate} (admin).`
-                    : `Each save adds a new batch to ${reportDate}.`}
+                    ? `Add new batch directly to submitted report (admin override)`
+                    : `Insert movement batch details`}
                 </p>
                 {entryFields}
-                <Button type="submit">
-                  {isSubmitted ? "Add entry (admin)" : `Save to ${reportDate}`}
+                <Button 
+                  type="submit"
+                  className="rounded-lg font-bold py-2.5 px-6 shadow-sm active:scale-[0.98] transition-all bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer"
+                >
+                  {isSubmitted ? "Add direct entry" : `Save to ${reportDate}`}
                 </Button>
               </form>
             ) : (
-              <p className="text-sm text-zinc-700">
-                Open <strong>Entry log</strong> and choose <strong>Edit</strong> on
-                a row to modify it.
-              </p>
+              <div className="py-6 text-center space-y-2">
+                <ListFilter className="h-8 w-8 mx-auto text-zinc-400" />
+                <p className="text-sm font-medium text-zinc-600">
+                  Adding new records is disabled. Use the <strong className="text-emerald-900">Entry log</strong> tab to submit correction requests.
+                </p>
+              </div>
             )}
           </TabPanel>
-        )}
+        </div>
 
-        {workTab === "log" && (
+        {/* Entry Log Tab */}
+        <div className={cn(workTab !== "log" && "hidden")}>
           <TabPanel className="p-0">
             <div className="overflow-x-auto p-4">
               <table className="w-full min-w-[480px] text-sm">
                 <thead>
-                  <tr className="border-b bg-zinc-100 text-left">
-                    <th className="p-2 font-semibold text-zinc-900">Time</th>
-                    <th className="p-2 font-semibold text-zinc-900">Entry</th>
-                    <th className="p-2">M</th>
-                    <th className="p-2">F</th>
-                    <th className="p-2">Tot</th>
-                    <th className="p-2">By</th>
-                    <th className="p-2" />
+                  <tr className="border-b bg-zinc-50 text-left border-zinc-200">
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-zinc-550">Time</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-zinc-550">Entry details</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-zinc-550 w-16">Male</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-zinc-550 w-16">Female</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-zinc-550 w-16">Total</th>
+                    <th className="p-3 text-xs font-bold uppercase tracking-wider text-zinc-550">Officer</th>
+                    <th className="p-3 w-32" />
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-zinc-100">
                   {sortedEntries.length === 0 && (
                     <tr>
                       <td
                         colSpan={7}
-                        className="p-6 text-center font-medium text-zinc-700"
+                        className="p-8 text-center text-sm font-semibold text-zinc-500"
                       >
-                        No entries for {reportDate}.
+                        No entries recorded for {reportDate}.
                       </td>
                     </tr>
                   )}
                   {sortedEntries.map((e) => (
-                    <tr key={e.id} className="border-b">
-                      <td className="p-2 tabular-nums">{formatTime(e.recordedAt)}</td>
-                      <td className="p-2">
+                    <tr key={e.id} className="hover:bg-zinc-50/40 transition">
+                      <td className="p-3 tabular-nums font-medium text-zinc-600">{formatTime(e.recordedAt)}</td>
+                      <td className="p-3 font-semibold text-zinc-900">
                         {entryLabel(e)}
                         {e.notes && (
-                          <span className="block text-xs text-zinc-600">
-                            {e.notes}
+                          <span className="block text-xxs font-medium text-zinc-500 mt-1 italic">
+                            Note: {e.notes}
                           </span>
                         )}
                       </td>
-                      <td className="p-2 tabular-nums">{e.male}</td>
-                      <td className="p-2 tabular-nums">{e.female}</td>
-                      <td className="p-2 tabular-nums font-medium">
+                      <td className="p-3 tabular-nums text-zinc-800 font-medium">{e.male}</td>
+                      <td className="p-3 tabular-nums text-zinc-800 font-medium">{e.female}</td>
+                      <td className="p-3 tabular-nums font-bold text-emerald-950">
                         {e.male + e.female}
                       </td>
-                      <td className="p-2 text-zinc-800">
+                      <td className="p-3 text-xs text-zinc-600 font-medium">
                         {e.enteredBy?.fullName ?? "—"}
                       </td>
-                      <td className="p-2">
-                        <div className="flex flex-wrap gap-2">
+                      <td className="p-3 text-right">
+                        <div className="inline-flex gap-2.5">
                           <button
                             type="button"
-                            className="text-xs font-semibold text-emerald-800"
+                            className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 hover:text-emerald-950 hover:underline cursor-pointer"
                             onClick={() => startEditEntry(e)}
                           >
                             Edit
                           </button>
                           <button
                             type="button"
-                            className="text-xs font-semibold text-red-700"
+                            className="text-xs font-extrabold uppercase tracking-wider text-red-700 hover:text-red-950 hover:underline cursor-pointer"
                             onClick={() => removeEntry(e.id)}
                           >
                             {isSubmitted && !isAdmin
-                              ? "Request remove"
+                              ? "Req remove"
                               : "Remove"}
                           </button>
                         </div>
@@ -612,113 +639,145 @@ export function DayRecordWorkspace({
                 </tbody>
               </table>
             </div>
+
             {(data?.amendments?.length ?? 0) > 0 && (
-              <div className="border-t border-zinc-200 p-4">
-                <h3 className="mb-2 text-sm font-semibold text-zinc-900">
-                  Correction history
+              <div className="border-t border-zinc-200 p-5 bg-zinc-50/50">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-600 mb-3">
+                  Correction history & audit log
                 </h3>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-2">
                   {(data?.amendments ?? []).map((a) => (
                     <li
                       key={a.id}
-                      className="rounded border border-zinc-200 px-3 py-2"
+                      className="rounded-lg border border-zinc-200 bg-white p-3.5 text-xs shadow-sm flex items-start justify-between gap-4"
                     >
-                      <span className="font-medium uppercase text-zinc-700">
+                      <div className="space-y-1">
+                        <span className="font-semibold text-zinc-900">
+                          {a.summary}
+                        </span>
+                        {a.reason && (
+                          <span className="block text-zinc-500 font-medium mt-0.5">
+                            Reason: {a.reason}
+                          </span>
+                        )}
+                        {a.reviewComment && (
+                          <span className="block text-emerald-900 font-bold mt-1">
+                            HQ Comment: {a.reviewComment}
+                          </span>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "rounded px-2 py-0.5 text-xxs font-extrabold uppercase tracking-wider border",
+                        a.status === "approved"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                          : a.status === "rejected"
+                            ? "bg-red-50 text-red-800 border-red-200"
+                            : "bg-amber-50 text-amber-800 border-amber-250"
+                      )}>
                         {a.status}
                       </span>
-                      {" — "}
-                      {a.summary}
-                      {a.reason && (
-                        <span className="block text-xs text-zinc-600">
-                          Reason: {a.reason}
-                        </span>
-                      )}
-                      {a.reviewComment && (
-                        <span className="block text-xs text-zinc-600">
-                          HQ: {a.reviewComment}
-                        </span>
-                      )}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
           </TabPanel>
+        </div>
+
+        {/* Day Totals Tab */}
+        {data?.summary && (
+          <div className={cn(workTab !== "totals" && "hidden")}>
+            <TabPanel className="border-0 bg-transparent p-0 shadow-none">
+              <DailySummaryTable
+                stationName={data.station?.name ?? "Station"}
+                reportDate={reportDate}
+                arrivals={data.summary.arrivals}
+                departures={data.summary.departures}
+                specialCategories={data.summary.specialCategories}
+              />
+            </TabPanel>
+          </div>
         )}
 
-        {workTab === "totals" && data?.summary && (
-          <TabPanel className="border-0 bg-transparent p-0 shadow-none">
-            <DailySummaryTable
-              stationName={data.station?.name ?? "Station"}
-              reportDate={reportDate}
-              arrivals={data.summary.arrivals}
-              departures={data.summary.departures}
-              specialCategories={data.summary.specialCategories}
-            />
-          </TabPanel>
-        )}
-
-        {workTab === "day" && (
-          <TabPanel>
-            <div className="space-y-4">
+        {/* Submit Day Tab */}
+        <div className={cn(workTab !== "day" && "hidden")}>
+          <TabPanel className="space-y-5">
+            <div>
               {isSubmitted ? (
-                <p className="text-sm text-zinc-700">
-                  This day was already submitted to HQ. Update remarks or metadata
-                  below — you cannot submit again.
-                </p>
+                <div className="flex gap-2 rounded-lg bg-emerald-50 border border-emerald-250 px-3.5 py-3 text-xs text-emerald-950">
+                  <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                  <span className="font-bold">
+                    This day report was already submitted to HQ. You can save remarks or metadata edits below, but cannot submit again.
+                  </span>
+                </div>
               ) : (
-                <p className="text-sm text-zinc-700">
-                  Close <strong>{reportDate}</strong> when all batches are logged (
-                  {entryCount} entries), then submit once to HQ.
+                <p className="text-sm text-zinc-600 leading-relaxed font-semibold">
+                  Complete day metadata and staff records for {reportDate} below. Verify calculations on the Day totals tab before finalizing.
                 </p>
               )}
-              <label className="block text-sm">
-                <span className="font-semibold text-zinc-900">Staff on duty</span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 sm:col-span-2">
+                Staff on Duty
                 <input
                   type="number"
                   min={0}
-                  className="mt-1 w-full max-w-xs rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+                  readOnly={isSubmitted && !isAdmin}
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none disabled:bg-zinc-150"
                   value={staffOnDuty}
                   onChange={(e) =>
                     setStaffOnDuty(Number(e.target.value) || 0)
                   }
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold text-zinc-900">
-                  Medical screening
-                </span>
+              
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 sm:col-span-2">
+                Medical screening
                 <textarea
-                  className="mt-1 w-full rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+                  readOnly={isSubmitted && !isAdmin}
                   rows={2}
+                  placeholder="Record screen result notes…"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none disabled:bg-zinc-150"
                   value={medicalScreening}
                   onChange={(e) => setMedicalScreening(e.target.value)}
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold text-zinc-900">
-                  General remarks
-                </span>
+
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-600 sm:col-span-2">
+                General remarks
                 <textarea
-                  className="mt-1 w-full rounded border border-zinc-400 px-3 py-2 text-zinc-900"
+                  readOnly={isSubmitted && !isAdmin}
                   rows={2}
+                  placeholder="Record general duty notes…"
+                  className="mt-1.5 block w-full rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm text-zinc-955 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none disabled:bg-zinc-150"
                   value={generalRemarks}
                   onChange={(e) => setGeneralRemarks(e.target.value)}
                 />
               </label>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="secondary" onClick={saveRemarks}>
-                  {isSubmitted ? "Save day modifications" : "Save remarks"}
+            </div>
+
+            <div className="flex flex-wrap gap-2.5 pt-3 border-t border-zinc-200">
+              <Button 
+                type="button" 
+                variant="secondary" 
+                className="rounded-lg shadow-sm font-bold cursor-pointer hover:bg-zinc-100"
+                onClick={saveRemarks}
+              >
+                {isSubmitted ? "Save day metadata (admin)" : "Save remarks"}
+              </Button>
+              {isDraft && (
+                <Button 
+                  type="button" 
+                  className="rounded-lg font-bold py-2.5 px-6 shadow-md active:scale-[0.98] transition-all bg-emerald-800 text-white hover:bg-emerald-900 cursor-pointer"
+                  onClick={submitDay}
+                >
+                  Submit Day report to HQ
                 </Button>
-                {isDraft && (
-                  <Button type="button" onClick={submitDay}>
-                    Submit {reportDate} to HQ
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
           </TabPanel>
-        )}
+        </div>
       </div>
     </div>
   );

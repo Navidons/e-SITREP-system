@@ -177,32 +177,32 @@ export function DailySummaryTable({
         onChange={(id) => setTotalsTab(id as TotalsTabId)}
       />
 
-      {totalsTab === "arrivals" && (
+      <div className={totalsTab !== "arrivals" ? "hidden" : undefined}>
         <TabPanel>
           <p className="mb-3 text-sm text-zinc-700">
             All arrival batches combined for this date.
           </p>
           <SummaryTable section={arrivals} />
         </TabPanel>
-      )}
+      </div>
 
-      {totalsTab === "departures" && (
+      <div className={totalsTab !== "departures" ? "hidden" : undefined}>
         <TabPanel>
           <p className="mb-3 text-sm text-zinc-700">
             All departure batches combined for this date.
           </p>
           <SummaryTable section={departures} />
         </TabPanel>
-      )}
+      </div>
 
-      {totalsTab === "special" && (
+      <div className={totalsTab !== "special" ? "hidden" : undefined}>
         <TabPanel>
           <p className="mb-3 text-sm text-zinc-700">
             Asylum seekers and refugees recorded today.
           </p>
           <SpecialTotals specialCategories={specialCategories} />
         </TabPanel>
-      )}
+      </div>
     </section>
   );
 }

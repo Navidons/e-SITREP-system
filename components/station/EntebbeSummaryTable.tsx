@@ -70,7 +70,7 @@ export function EntebbeSummaryTable({
 
       <Tabs tabs={tabs} active={tab} onChange={(id) => setTab(id as typeof tab)} />
 
-      {tab === "flights" && (
+      <div className={tab !== "flights" ? "hidden" : undefined}>
         <TabPanel>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard
@@ -90,9 +90,9 @@ export function EntebbeSummaryTable({
             />
           </div>
         </TabPanel>
-      )}
+      </div>
 
-      {tab === "cases" && (
+      <div className={tab !== "cases" ? "hidden" : undefined}>
         <TabPanel>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Deportees" value={air.deportees} />
@@ -101,16 +101,16 @@ export function EntebbeSummaryTable({
             <StatCard label="Denied entry" value={air.denied} />
           </div>
         </TabPanel>
-      )}
+      </div>
 
-      {tab === "other" && (
+      <div className={tab !== "other" ? "hidden" : undefined}>
         <TabPanel>
           <div className="grid gap-4 sm:grid-cols-2">
             <StatCard label="Inadmissible (day)" value={inadmissibleCount} />
             <StatCard label="Occurrences logged" value={incidentCount} />
           </div>
         </TabPanel>
-      )}
+      </div>
     </section>
   );
 }
