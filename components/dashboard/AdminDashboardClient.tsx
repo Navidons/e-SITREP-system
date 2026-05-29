@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { Spinner } from "@/components/ui/spinner";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { Users, Building2, FileCheck, AlertTriangle, Activity, RefreshCw, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -134,8 +135,9 @@ export function AdminDashboardClient() {
             Audit Log Activity — Last 7 Days
           </h3>
           {loading ? (
-            <div className="flex h-52 items-center justify-center">
-              <p className="text-sm font-semibold text-zinc-400">Loading…</p>
+            <div className="flex h-52 flex-col items-center justify-center gap-2">
+              <Spinner />
+              <p className="text-sm font-semibold text-zinc-400">Loading charts…</p>
             </div>
           ) : data ? (
             <TrendChart
@@ -216,7 +218,10 @@ export function AdminDashboardClient() {
           </Link>
         </div>
         {loading ? (
-          <div className="p-6 text-center text-sm font-semibold text-zinc-400">Loading…</div>
+          <div className="flex flex-col items-center gap-2 p-6">
+            <Spinner />
+            <p className="text-sm font-semibold text-zinc-400">Loading submissions…</p>
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead>

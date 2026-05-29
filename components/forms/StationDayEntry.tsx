@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { NATIONALITY_CODES, nationalityLabel } from "@/lib/constants/nationalities";
 import { Button } from "@/components/ui/button";
+import { LoadingOverlay } from "@/components/ui/loading";
 import { Tabs, TabPanel } from "@/components/ui/tabs";
 import { DailySummaryTable } from "@/components/forms/DailySummaryTable";
 import { formatDateInput } from "@/lib/utils";
@@ -279,9 +280,6 @@ export function StationDayEntry() {
             </p>
           </div>
         </div>
-        {loading && (
-          <p className="text-sm font-medium text-zinc-700">Loading…</p>
-        )}
       </div>
 
       {message && (
@@ -290,7 +288,8 @@ export function StationDayEntry() {
         </p>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-zinc-300 shadow-sm">
+      <div className="relative overflow-hidden rounded-lg border border-zinc-300 shadow-sm">
+        {loading && <LoadingOverlay message="Loading day record…" />}
         <Tabs
           tabs={tabs}
           active={activeTab}

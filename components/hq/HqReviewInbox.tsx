@@ -340,6 +340,8 @@ export function HqReviewInbox() {
                           {r.status === "submitted" && (
                             <Button
                               size="sm"
+                              loading={actionBusy}
+                              disabled={actionBusy}
                               onClick={() => reportAction(r.id, "review")}
                             >
                               Review
@@ -348,6 +350,8 @@ export function HqReviewInbox() {
                           {r.status === "reviewed" && (
                             <Button
                               size="sm"
+                              loading={actionBusy}
+                              disabled={actionBusy}
                               onClick={() => reportAction(r.id, "verify")}
                             >
                               Verify
@@ -356,6 +360,8 @@ export function HqReviewInbox() {
                           {r.status === "verified" && (
                             <Button
                               size="sm"
+                              loading={actionBusy}
+                              disabled={actionBusy}
                               onClick={() => reportAction(r.id, "approve")}
                             >
                               Approve
@@ -398,17 +404,32 @@ export function HqReviewInbox() {
           {selected && !previewLoading && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-zinc-200 pt-4">
               {selected.status === "submitted" && (
-                <Button size="sm" onClick={() => reportAction(selected.id, "review")}>
+                <Button
+                  size="sm"
+                  loading={actionBusy}
+                  disabled={actionBusy}
+                  onClick={() => reportAction(selected.id, "review")}
+                >
                   Review
                 </Button>
               )}
               {selected.status === "reviewed" && (
-                <Button size="sm" onClick={() => reportAction(selected.id, "verify")}>
+                <Button
+                  size="sm"
+                  loading={actionBusy}
+                  disabled={actionBusy}
+                  onClick={() => reportAction(selected.id, "verify")}
+                >
                   Verify
                 </Button>
               )}
               {selected.status === "verified" && (
-                <Button size="sm" onClick={() => reportAction(selected.id, "approve")}>
+                <Button
+                  size="sm"
+                  loading={actionBusy}
+                  disabled={actionBusy}
+                  onClick={() => reportAction(selected.id, "approve")}
+                >
                   Approve
                 </Button>
               )}

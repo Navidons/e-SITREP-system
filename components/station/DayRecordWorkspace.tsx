@@ -108,6 +108,7 @@ export function DayRecordWorkspace({
   const [workTab, setWorkTab] = useState<WorkTabId>("entry");
   const [data, setData] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const [entryType, setEntryType] = useState<EntryType>("arrival");
@@ -172,35 +173,40 @@ export function DayRecordWorkspace({
       setMessage("Select a nationality from the list.");
       return;
     }
-    const res = await fetch("/api/reports/daily/entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        reportDate,
-        entryType,
-        nationalityCode:
-          entryType === "arrival" || entryType === "departure"
-            ? nationalityCode
-            : nationalityCode || undefined,
-        male,
-        female,
-        recordedAt: new Date(recordedAt).toISOString(),
-        notes: notes || undefined,
-      } satisfies DayEntryPayload),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setMessage(json.error ?? json.error ?? "Could not save entry");
-      return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/reports/daily/entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportDate,
+          entryType,
+          nationalityCode:
+            entryType === "arrival" || entryType === "departure"
+              ? nationalityCode
+              : nationalityCode || undefined,
+          male,
+          female,
+          recordedAt: new Date(recordedAt).toISOString(),
+          notes: notes || undefined,
+        } satisfies DayEntryPayload),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(json.error ?? json.error ?? "Could not save entry");
+        return;
+      }
+      setData(json);
+      setMale(0);
+      setFemale(0);
+      setNationalityCode("");
+      setNotes("");
+      setRecordedAt(nowLocalDatetime());
+      setMessage(`${ENTRY_LABELS[entryType]} saved for ${reportDate}.`);
+      setWorkTab("log");
+    } finally {
+      setSaving(false);
     }
-    setData(json);
-    setMale(0);
-    setFemale(0);
-    setNationalityCode("");
-    setNotes("");
-    setRecordedAt(nowLocalDatetime());
-    setMessage(`${ENTRY_LABELS[entryType]} saved for ${reportDate}.`);
-    setWorkTab("log");
   }
 
   function startEditEntry(e: DailyEntryRow) {
@@ -235,37 +241,42 @@ export function DayRecordWorkspace({
       setMessage("Reason required for edits on a submitted day.");
       return;
     }
-    const res = await fetch(`/api/reports/daily/entries/${editingEntryId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        reportDate,
-        entryType,
-        nationalityCode:
-          entryType === "arrival" || entryType === "departure"
-            ? nationalityCode
-            : nationalityCode || undefined,
-        male,
-        female,
-        recordedAt: new Date(recordedAt).toISOString(),
-        notes: notes || undefined,
-        correctionReason: isSubmitted && !isAdmin ? correctionReason.trim() : undefined,
-      } satisfies DayEntryUpdatePayload),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setMessage(json.error ?? "Update failed");
-      return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/reports/daily/entries/${editingEntryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportDate,
+          entryType,
+          nationalityCode:
+            entryType === "arrival" || entryType === "departure"
+              ? nationalityCode
+              : nationalityCode || undefined,
+          male,
+          female,
+          recordedAt: new Date(recordedAt).toISOString(),
+          notes: notes || undefined,
+          correctionReason: isSubmitted && !isAdmin ? correctionReason.trim() : undefined,
+        } satisfies DayEntryUpdatePayload),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(json.error ?? "Update failed");
+        return;
+      }
+      setData(json);
+      cancelEdit();
+      setMessage(
+        json.message ??
+          (isSubmitted && !isAdmin
+            ? "Update sent for HQ approval."
+            : "Entry updated. Totals reconciled."),
+      );
+      setWorkTab("log");
+    } finally {
+      setSaving(false);
     }
-    setData(json);
-    cancelEdit();
-    setMessage(
-      json.message ??
-        (isSubmitted && !isAdmin
-          ? "Update sent for HQ approval."
-          : "Entry updated. Totals reconciled."),
-    );
-    setWorkTab("log");
   }
 
   async function removeEntry(entryId: number) {
@@ -279,23 +290,30 @@ export function DayRecordWorkspace({
     const qs = new URLSearchParams({ date: reportDate });
     if (reason?.trim()) qs.set("correctionReason", reason.trim());
 
-    const res = await fetch(
-      `/api/reports/daily/entries/${entryId}?${qs.toString()}`,
-      { method: "DELETE" },
-    );
-    const json = await res.json();
-    if (!res.ok) {
-      setMessage(json.error ?? "Delete failed");
-      return;
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/reports/daily/entries/${entryId}?${qs.toString()}`,
+        { method: "DELETE" },
+      );
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(json.error ?? "Delete failed");
+        return;
+      }
+      setData(json);
+      setMessage(
+        json.message ??
+          (isSubmitted && !isAdmin ? "Removal request sent." : "Entry removed."),
+      );
+    } finally {
+      setSaving(false);
     }
-    setData(json);
-    setMessage(
-      json.message ??
-        (isSubmitted && !isAdmin ? "Removal request sent." : "Entry removed."),
-    );
   }
 
   async function saveRemarks() {
+    setSaving(true);
+    try {
     const res = await fetch("/api/reports/daily", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -314,6 +332,9 @@ export function DayRecordWorkspace({
     }
     setData(json);
     setMessage("Remarks saved.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function submitDay() {
@@ -322,14 +343,19 @@ export function DayRecordWorkspace({
       setWorkTab("entry");
       return;
     }
-    const res = await fetch(`/api/reports/${data.id}/submit`, { method: "POST" });
-    const json = await res.json();
-    if (!res.ok) {
-      setMessage(json.error ?? "Submit failed");
-      return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/reports/${data.id}/submit`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) {
+        setMessage(json.error ?? "Submit failed");
+        return;
+      }
+      await load();
+      setMessage(`Day report for ${reportDate} submitted to HQ.`);
+    } finally {
+      setSaving(false);
     }
-    await load();
-    setMessage(`Day report for ${reportDate} submitted to HQ.`);
   }
 
   const entryCount = data?.entries?.length ?? 0;
@@ -524,7 +550,7 @@ export function DayRecordWorkspace({
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <Button type="submit">
+                  <Button type="submit" loading={saving}>
                     {isSubmitted && !isAdmin
                       ? "Submit update for approval"
                       : "Save changes"}
@@ -542,7 +568,7 @@ export function DayRecordWorkspace({
                     : `Each save adds a new batch to ${reportDate}.`}
                 </p>
                 {entryFields}
-                <Button type="submit">
+                <Button type="submit" loading={saving}>
                   {isSubmitted ? "Add entry (admin)" : `Save to ${reportDate}`}
                 </Button>
               </form>
@@ -718,11 +744,11 @@ export function DayRecordWorkspace({
                 />
               </label>
               <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="secondary" onClick={saveRemarks}>
+                <Button type="button" variant="secondary" loading={saving} onClick={saveRemarks}>
                   {isSubmitted ? "Save day modifications" : "Save remarks"}
                 </Button>
                 {isDraft && (
-                  <Button type="button" onClick={submitDay}>
+                  <Button type="button" loading={saving} onClick={submitDay}>
                     Submit {reportDate} to HQ
                   </Button>
                 )}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { Spinner } from "@/components/ui/spinner";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { DonutChart } from "@/components/dashboard/DonutChart";
 import { StationStatusGrid } from "@/components/dashboard/StationStatusGrid";
@@ -198,8 +199,9 @@ export function HqDashboardClient() {
               {range}-Day National Movement Trend
             </h3>
             {loading ? (
-              <div className="flex h-52 items-center justify-center">
-                <p className="text-sm font-semibold text-zinc-400">Loading…</p>
+              <div className="flex h-52 flex-col items-center justify-center gap-2">
+                <Spinner />
+                <p className="text-sm font-semibold text-zinc-400">Loading charts…</p>
               </div>
             ) : data ? (
               <TrendChart
@@ -222,8 +224,9 @@ export function HqDashboardClient() {
               Top Nationalities
             </h3>
             {loading ? (
-              <div className="flex h-52 items-center justify-center">
-                <p className="text-sm font-semibold text-zinc-400">Loading…</p>
+              <div className="flex h-52 flex-col items-center justify-center gap-2">
+                <Spinner />
+                <p className="text-sm font-semibold text-zinc-400">Loading charts…</p>
               </div>
             ) : data ? (
               <DonutChart
@@ -300,7 +303,8 @@ export function HqDashboardClient() {
             All Border Stations — Today
           </h3>
           {loading ? (
-            <div className="flex h-32 items-center justify-center">
+            <div className="flex h-32 flex-col items-center justify-center gap-2">
+              <Spinner />
               <p className="text-sm font-semibold text-zinc-400">Loading stations…</p>
             </div>
           ) : data ? (

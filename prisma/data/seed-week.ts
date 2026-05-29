@@ -183,8 +183,8 @@ export async function seedDemoWeekForStations(
     const isAir = station.reportingProfile === ReportingProfile.air;
 
     await withDbRetry(prisma, async (db) => {
-      await db.$transaction(
-        Array.from({ length: DEMO_WEEK_DAYS }, (_, di) => {
+      await db.$transaction(async (tx) => {
+        for (let di = 0; di < DEMO_WEEK_DAYS; di++) {
           const reportDateStr = addDays(DEMO_WEEK_START, di);
           const reportDate = parseUtcDate(reportDateStr);
           const status = DAY_STATUSES[di];
@@ -197,7 +197,7 @@ export async function seedDemoWeekForStations(
             ? airBatchesForDay(si, di)
             : batchesForDay(si, di);
 
-          return db.stationDailyReport.create({
+          await tx.stationDailyReport.create({
             data: {
               stationId,
               reportDate,
@@ -214,9 +214,8 @@ export async function seedDemoWeekForStations(
               },
             },
           });
-        }),
-        { timeout: 120_000 },
-      );
+        }
+      });
     });
 
     if ((si + 1) % 10 === 0 || si === stations.length - 1) {

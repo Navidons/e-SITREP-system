@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { Spinner } from "@/components/ui/spinner";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { DonutChart } from "@/components/dashboard/DonutChart";
 import {
@@ -182,8 +183,9 @@ export function StationDashboardClient() {
               {range}-Day Movement Trend
             </h3>
             {loading ? (
-              <div className="flex h-52 items-center justify-center">
-                <p className="text-sm font-semibold text-zinc-400">Loading…</p>
+              <div className="flex h-52 flex-col items-center justify-center gap-2">
+                <Spinner />
+                <p className="text-sm font-semibold text-zinc-400">Loading charts…</p>
               </div>
             ) : data ? (
               <TrendChart
@@ -207,8 +209,9 @@ export function StationDashboardClient() {
               Top Nationalities
             </h3>
             {loading ? (
-              <div className="flex h-52 items-center justify-center">
-                <p className="text-sm font-semibold text-zinc-400">Loading…</p>
+              <div className="flex h-52 flex-col items-center justify-center gap-2">
+                <Spinner />
+                <p className="text-sm font-semibold text-zinc-400">Loading charts…</p>
               </div>
             ) : data ? (
               <DonutChart
