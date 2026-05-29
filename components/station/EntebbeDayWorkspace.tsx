@@ -9,6 +9,8 @@ import type { DayData, DailyEntryRow } from "@/components/station/shared-day-typ
 import { Button } from "@/components/ui/button";
 import { TabGroup } from "@/components/ui/tabs";
 import { Alert } from "@/components/ui/alert";
+import { LoadingOverlay } from "@/components/ui/loading";
+import { Spinner } from "@/components/ui/spinner";
 import {
   AIR_MODULE_GROUPS,
   ENTRY_LABELS,
@@ -53,7 +55,7 @@ export function EntebbeDayWorkspace({
   const [workTab, setWorkTab] = useState<WorkTabId>("entry");
   const [airModule, setAirModule] = useState<AirModuleId>("flights");
   const [data, setData] = useState<DayData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
   const [entryType, setEntryType] = useState<DayEntryTypeId>("flight_arrival");
@@ -91,15 +93,18 @@ export function EntebbeDayWorkspace({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/reports/daily?date=${reportDate}`);
-    const json = await res.json();
-    setLoading(false);
-    setData(json);
-    setStaffOnDuty(json.staffOnDuty ?? 0);
-    setStaffLeaveNotes(json.staffLeaveNotes ?? "");
-    setInadmissibleCount(json.inadmissibleCount ?? 0);
-    setGeneralRemarks(json.generalRemarks ?? "");
-    setUrgentMatters(json.urgentMatters ?? "");
+    try {
+      const res = await fetch(`/api/reports/daily?date=${reportDate}`);
+      const json = await res.json();
+      setData(json);
+      setStaffOnDuty(json.staffOnDuty ?? 0);
+      setStaffLeaveNotes(json.staffLeaveNotes ?? "");
+      setInadmissibleCount(json.inadmissibleCount ?? 0);
+      setGeneralRemarks(json.generalRemarks ?? "");
+      setUrgentMatters(json.urgentMatters ?? "");
+    } finally {
+      setLoading(false);
+    }
   }, [reportDate]);
 
   useEffect(() => {
@@ -376,12 +381,14 @@ export function EntebbeDayWorkspace({
         </Alert>
       )}
 
-      <TabGroup
-        tabs={workTabs}
-        active={workTab}
-        onChange={(id) => setWorkTab(id as WorkTabId)}
-        minHeight="min-h-[22rem]"
-      >
+      <div className="relative">
+        {loading && <LoadingOverlay message="Loading airport day record…" />}
+        <TabGroup
+          tabs={workTabs}
+          active={workTab}
+          onChange={(id) => setWorkTab(id as WorkTabId)}
+          minHeight="min-h-[22rem]"
+        >
         <TabGroup.Panel id="entry">
             {isSubmitted && (
               <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -661,9 +668,6 @@ export function EntebbeDayWorkspace({
         </TabGroup.Panel>
 
         <TabGroup.Panel id="log">
-            {loading ? (
-              <p className="text-sm text-zinc-600">Loading…</p>
-            ) : (
               <div className="space-y-6">
                 <div>
                   <h4 className="mb-2 text-sm font-bold text-zinc-900">
@@ -740,7 +744,6 @@ export function EntebbeDayWorkspace({
                   )}
                 </div>
               </div>
-            )}
         </TabGroup.Panel>
 
         <TabGroup.Panel id="occurrences">
@@ -872,7 +875,8 @@ export function EntebbeDayWorkspace({
               </div>
             </div>
         </TabGroup.Panel>
-      </TabGroup>
+        </TabGroup>
+      </div>
     </div>
   );
 }

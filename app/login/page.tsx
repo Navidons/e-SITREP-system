@@ -1,4 +1,5 @@
 import { loginAction } from "@/app/login/actions";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 const ERROR_MESSAGES: Record<string, string> = {
   credentials: "Invalid username or password.",
@@ -40,55 +41,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
           <p className="mt-1 text-sm font-semibold text-white">e-SITREP</p>
         </div>
 
-        <form action={loginAction} className="space-y-4 p-6">
-          <input type="hidden" name="callbackUrl" value={callbackUrl} />
-
-          {errorMessage ? (
-            <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-              {errorMessage}
-            </p>
-          ) : null}
-
-          <div>
-            <label
-              htmlFor="username"
-              className="mb-1 block text-sm font-semibold text-zinc-900"
-            >
-              Username
-            </label>
-            <input
-              id="username"
-              name="username"
-              autoComplete="username"
-              required
-              className="w-full rounded border border-zinc-400 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-1 block text-sm font-semibold text-zinc-900"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className="w-full rounded border border-zinc-400 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full rounded bg-[#0d3b2e] py-2.5 text-sm font-semibold text-white hover:bg-[#0a2f24]"
-          >
-            Sign in
-          </button>
-        </form>
+        <LoginForm
+          action={loginAction}
+          callbackUrl={callbackUrl}
+          errorMessage={errorMessage}
+        />
       </div>
     </main>
   );

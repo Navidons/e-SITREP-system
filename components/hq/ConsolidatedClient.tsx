@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { LoadingBlock, LoadingOverlay } from "@/components/ui/loading";
 import { Field, inputClassName } from "@/components/ui/field";
 import { formatDateInput } from "@/lib/utils";
 
@@ -89,16 +90,16 @@ export function ConsolidatedClient() {
             onChange={(e) => setDate(e.target.value)}
           />
         </Field>
-        <Button type="button" onClick={generate} disabled={loading}>
-          {loading ? "Loading…" : "Load consolidated SITREP"}
+        <Button type="button" onClick={generate} loading={loading}>
+          Load consolidated SITREP
         </Button>
         <Button
           type="button"
           variant="secondary"
           onClick={downloadExcel}
-          disabled={downloading}
+          loading={downloading}
         >
-          {downloading ? "Exporting…" : "Download Excel table"}
+          Download Excel table
         </Button>
       </div>
 
@@ -108,8 +109,13 @@ export function ConsolidatedClient() {
         </Alert>
       )}
 
+      {loading && rows.length === 0 && (
+        <LoadingBlock message="Loading approved reports for this date…" />
+      )}
+
       {rows.length > 0 && (
-        <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
+        <div className="relative overflow-hidden rounded-lg border bg-white shadow-sm">
+          {loading && <LoadingOverlay message="Refreshing…" />}
           <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-2">
             <p className="text-sm font-semibold text-zinc-900">
               Consolidated table — {date}

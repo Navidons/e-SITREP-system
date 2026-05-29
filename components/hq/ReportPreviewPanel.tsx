@@ -5,6 +5,7 @@ import { EntebbeSummaryTable } from "@/components/station/EntebbeSummaryTable";
 import { ENTRY_LABELS } from "@/lib/station/entry-config";
 import { ReportingProfile } from "@/lib/station/entry-config";
 import { useAppPreferences } from "@/components/providers/AppPreferencesProvider";
+import { LoadingBlock } from "@/components/ui/loading";
 import type { DayData } from "@/components/station/shared-day-types";
 
 function formatTime(iso: string) {
@@ -25,9 +26,10 @@ export function ReportPreviewPanel({
 
   if (loading) {
     return (
-      <p className="py-8 text-center text-sm font-medium text-zinc-600">
-        Loading report…
-      </p>
+      <LoadingBlock
+        message="Loading report from database…"
+        className="min-h-[16rem]"
+      />
     );
   }
 

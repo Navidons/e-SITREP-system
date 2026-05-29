@@ -4,6 +4,7 @@ import {
   ReportStatus,
   ReportingProfile,
 } from "@prisma/client";
+import { withDbRetry } from "../seed-db";
 
 export const DEMO_WEEK_START = "2026-05-17";
 export const DEMO_WEEK_DAYS = 7;
@@ -54,7 +55,8 @@ type Batch = {
 function batchesForDay(stationIndex: number, dayIndex: number): Batch[] {
   const s = stationIndex + 1;
   const d = dayIndex + 1;
-  const nat = (i: number) => MOVEMENT_CODES[(stationIndex + dayIndex + i) % MOVEMENT_CODES.length];
+  const nat = (i: number) =>
+    MOVEMENT_CODES[(stationIndex + dayIndex + i) % MOVEMENT_CODES.length];
 
   return [
     {
@@ -123,33 +125,56 @@ function airBatchesForDay(stationIndex: number, dayIndex: number): Batch[] {
   ];
 }
 
+function entriesCreateData(
+  reportDateStr: string,
+  batches: Batch[],
+  enteredById: number | undefined,
+) {
+  return batches.map((b) => ({
+    entryType: b.type,
+    nationalityCode: b.code,
+    male: b.male,
+    female: b.female,
+    flightNumber: b.flight ?? null,
+    route: b.route ?? null,
+    shift: b.shift ?? null,
+    recordedAt: atTime(reportDateStr, b.hour, b.minute ?? 0),
+    enteredById: enteredById ?? null,
+  }));
+}
+
 export async function seedDemoWeekForStations(
   prisma: PrismaClient,
   stations: Array<{ id: number; reportingProfile: ReportingProfile }>,
   inputterByStationId: Map<number, number>,
 ) {
-  const stationIds = stations.map((s) => s.id);
   const weekEnd = addDays(DEMO_WEEK_START, DEMO_WEEK_DAYS - 1);
 
-  await prisma.dailyEntry.deleteMany({
-    where: {
-      report: {
+  await withDbRetry(prisma, async (db) => {
+    await db.dailyEntry.deleteMany({
+      where: {
+        report: {
+          reportDate: {
+            gte: parseUtcDate(DEMO_WEEK_START),
+            lte: parseUtcDate(weekEnd),
+          },
+        },
+      },
+    });
+
+    await db.stationDailyReport.deleteMany({
+      where: {
         reportDate: {
           gte: parseUtcDate(DEMO_WEEK_START),
           lte: parseUtcDate(weekEnd),
         },
       },
-    },
+    });
   });
 
-  await prisma.stationDailyReport.deleteMany({
-    where: {
-      reportDate: {
-        gte: parseUtcDate(DEMO_WEEK_START),
-        lte: parseUtcDate(weekEnd),
-      },
-    },
-  });
+  console.log(
+    `Seeding demo week ${DEMO_WEEK_START} (+${DEMO_WEEK_DAYS - 1} days) for ${stations.length} stations…`,
+  );
 
   for (let si = 0; si < stations.length; si++) {
     const station = stations[si];
@@ -157,48 +182,45 @@ export async function seedDemoWeekForStations(
     const enteredById = inputterByStationId.get(stationId);
     const isAir = station.reportingProfile === ReportingProfile.air;
 
-    for (let di = 0; di < DEMO_WEEK_DAYS; di++) {
-      const reportDateStr = addDays(DEMO_WEEK_START, di);
-      const reportDate = parseUtcDate(reportDateStr);
-      const status = DAY_STATUSES[di];
-      const submitted =
-        status !== ReportStatus.draft
-          ? { submissionTime: atTime(reportDateStr, 15, 30) }
-          : {};
+    await withDbRetry(prisma, async (db) => {
+      await db.$transaction(
+        Array.from({ length: DEMO_WEEK_DAYS }, (_, di) => {
+          const reportDateStr = addDays(DEMO_WEEK_START, di);
+          const reportDate = parseUtcDate(reportDateStr);
+          const status = DAY_STATUSES[di];
+          const submitted =
+            status !== ReportStatus.draft
+              ? { submissionTime: atTime(reportDateStr, 15, 30) }
+              : {};
 
-      const report = await prisma.stationDailyReport.create({
-        data: {
-          stationId,
-          reportDate,
-          submittedById: enteredById ?? null,
-          status,
-          staffOnDuty: 8 + (si % 6),
-          medicalScreening: "Routine screening completed.",
-          generalRemarks: `Demo week ${reportDateStr} — ${status}.`,
-          ...submitted,
-        },
-      });
+          const batches = isAir
+            ? airBatchesForDay(si, di)
+            : batchesForDay(si, di);
 
-      const batches = isAir
-        ? airBatchesForDay(si, di)
-        : batchesForDay(si, di);
+          return db.stationDailyReport.create({
+            data: {
+              stationId,
+              reportDate,
+              submittedById: enteredById ?? null,
+              status,
+              staffOnDuty: 8 + (si % 6),
+              medicalScreening: isAir
+                ? undefined
+                : "Routine screening completed.",
+              generalRemarks: `Demo week ${reportDateStr} — ${status}.`,
+              ...submitted,
+              entries: {
+                create: entriesCreateData(reportDateStr, batches, enteredById),
+              },
+            },
+          });
+        }),
+        { timeout: 120_000 },
+      );
+    });
 
-      for (const b of batches) {
-        await prisma.dailyEntry.create({
-          data: {
-            reportId: report.id,
-            entryType: b.type,
-            nationalityCode: b.code,
-            male: b.male,
-            female: b.female,
-            flightNumber: b.flight ?? null,
-            route: b.route ?? null,
-            shift: b.shift ?? null,
-            recordedAt: atTime(reportDateStr, b.hour, b.minute ?? 0),
-            enteredById: enteredById ?? null,
-          },
-        });
-      }
+    if ((si + 1) % 10 === 0 || si === stations.length - 1) {
+      console.log(`  … ${si + 1} / ${stations.length} stations`);
     }
   }
 }
@@ -240,40 +262,40 @@ export async function seedEleguApprovedSample(
   stationId: number,
   userId: number,
 ) {
-  const reportDate = parseUtcDate(ELEGU_SAMPLE_DATE);
-  const dayBase = reportDate.getTime();
-  const at = (hour: number, min = 0) =>
-    new Date(dayBase + hour * 3_600_000 + min * 60_000);
+  await withDbRetry(prisma, async (db) => {
+    const reportDate = parseUtcDate(ELEGU_SAMPLE_DATE);
+    const dayBase = reportDate.getTime();
+    const at = (hour: number, min = 0) =>
+      new Date(dayBase + hour * 3_600_000 + min * 60_000);
 
-  const report = await prisma.stationDailyReport.upsert({
-    where: {
-      stationId_reportDate: { stationId, reportDate },
-    },
-    update: {
-      status: ReportStatus.approved,
-      staffOnDuty: 12,
-      medicalScreening: "All travellers screened per protocol.",
-      generalRemarks: "Normal operations — NCIC sample totals.",
-      submissionTime: at(15, 0),
-      submittedById: userId,
-    },
-    create: {
-      stationId,
-      reportDate,
-      submittedById: userId,
-      status: ReportStatus.approved,
-      staffOnDuty: 12,
-      medicalScreening: "All travellers screened per protocol.",
-      generalRemarks: "Normal operations — NCIC sample totals.",
-      submissionTime: at(15, 0),
-    },
-  });
+    const report = await db.stationDailyReport.upsert({
+      where: {
+        stationId_reportDate: { stationId, reportDate },
+      },
+      update: {
+        status: ReportStatus.approved,
+        staffOnDuty: 12,
+        medicalScreening: "All travellers screened per protocol.",
+        generalRemarks: "Normal operations — NCIC sample totals.",
+        submissionTime: at(15, 0),
+        submittedById: userId,
+      },
+      create: {
+        stationId,
+        reportDate,
+        submittedById: userId,
+        status: ReportStatus.approved,
+        staffOnDuty: 12,
+        medicalScreening: "All travellers screened per protocol.",
+        generalRemarks: "Normal operations — NCIC sample totals.",
+        submissionTime: at(15, 0),
+      },
+    });
 
-  await prisma.dailyEntry.deleteMany({ where: { reportId: report.id } });
+    await db.dailyEntry.deleteMany({ where: { reportId: report.id } });
 
-  for (const b of ELEGU_SAMPLE_BATCHES) {
-    await prisma.dailyEntry.create({
-      data: {
+    await db.dailyEntry.createMany({
+      data: ELEGU_SAMPLE_BATCHES.map((b) => ({
         reportId: report.id,
         entryType: b.type,
         nationalityCode: b.code,
@@ -282,7 +304,7 @@ export async function seedEleguApprovedSample(
         recordedAt: at(b.h, b.m ?? 0),
         enteredById: userId,
         notes: b.note,
-      },
+      })),
     });
-  }
+  });
 }

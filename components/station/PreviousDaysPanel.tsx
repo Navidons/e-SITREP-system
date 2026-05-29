@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 export type DayListItem = {
@@ -309,7 +310,10 @@ export function PreviousDaysPanel({
           <p className="px-2 py-2 text-xs font-medium text-red-700">{error}</p>
         )}
         {loading && days.length === 0 && (
-          <p className="px-2 py-4 text-xs text-zinc-600">Loading…</p>
+          <div className="flex flex-col items-center gap-2 px-2 py-8 text-center">
+            <Spinner size="sm" />
+            <p className="text-xs text-zinc-600">Loading days…</p>
+          </div>
         )}
         {years.length === 0 && !loading && (
           <p className="px-2 py-4 text-xs text-zinc-600">
@@ -355,7 +359,14 @@ export function PreviousDaysPanel({
             disabled={loadingMore}
             onClick={loadMore}
           >
-            {loadingMore ? "Loading…" : "Load more"}
+            {loadingMore ? (
+              <span className="inline-flex items-center gap-2">
+                <Spinner size="sm" />
+                Loading…
+              </span>
+            ) : (
+              "Load more"
+            )}
           </Button>
         )}
       </div>

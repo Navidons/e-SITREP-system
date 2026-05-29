@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TabGroup } from "@/components/ui/tabs";
 import { Alert } from "@/components/ui/alert";
+import { LoadingBlock, TableSkeleton } from "@/components/ui/loading";
+import { Spinner } from "@/components/ui/spinner";
 import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
 import {
   ASSIGNABLE_ROLES,
@@ -233,9 +235,10 @@ export function AdminConsole() {
       >
         <TabGroup.Panel id="admin" className="space-y-4">
           {loading && (
-            <p className="text-sm text-zinc-600" role="status">
-              Loading users and stations…
-            </p>
+            <div className="flex items-center gap-2 text-sm text-zinc-600" role="status">
+              <Spinner size="sm" />
+              Loading users and stations from database…
+            </div>
           )}
           {message && (
             <Alert variant="success" onDismiss={() => setMessage(null)}>
@@ -255,6 +258,9 @@ export function AdminConsole() {
             minHeight="min-h-[28rem]"
           >
             <TabGroup.Panel id="users">
+              {loading ? (
+                <TableSkeleton rows={8} cols={4} />
+              ) : (
               <div className="overflow-hidden rounded-lg border border-zinc-300 bg-white shadow-sm">
                 <form onSubmit={saveUser} className="border-b border-zinc-200 p-4 space-y-4">
                   <h3 className="font-semibold text-zinc-900">
@@ -412,9 +418,13 @@ export function AdminConsole() {
                   </table>
                 </div>
               </div>
+              )}
             </TabGroup.Panel>
 
             <TabGroup.Panel id="stations">
+              {loading ? (
+                <TableSkeleton rows={10} cols={4} />
+              ) : (
               <div className="overflow-hidden rounded-lg border border-zinc-300 bg-white shadow-sm">
                 <form
                   onSubmit={saveStation}
@@ -524,6 +534,7 @@ export function AdminConsole() {
                   </table>
                 </div>
               </div>
+              )}
             </TabGroup.Panel>
           </TabGroup>
         </TabGroup.Panel>

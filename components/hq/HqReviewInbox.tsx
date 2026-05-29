@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { LoadingBlock, TableSkeleton } from "@/components/ui/loading";
 import { ReportPreviewPanel } from "@/components/hq/ReportPreviewPanel";
 import type { DayData } from "@/components/station/shared-day-types";
 
@@ -39,17 +40,24 @@ export function HqReviewInbox() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [inboxLoading, setInboxLoading] = useState(true);
+  const [actionBusy, setActionBusy] = useState(false);
 
   const load = useCallback(async () => {
-    const [reportsRes, amendmentsRes] = await Promise.all([
-      fetch("/api/reports/pending"),
-      fetch("/api/reports/amendments/pending"),
-    ]);
-    setReports(await reportsRes.json());
-    if (amendmentsRes.ok) {
-      setAmendments(await amendmentsRes.json());
-    } else {
-      setAmendments([]);
+    setInboxLoading(true);
+    try {
+      const [reportsRes, amendmentsRes] = await Promise.all([
+        fetch("/api/reports/pending"),
+        fetch("/api/reports/amendments/pending"),
+      ]);
+      setReports(await reportsRes.json());
+      if (amendmentsRes.ok) {
+        setAmendments(await amendmentsRes.json());
+      } else {
+        setAmendments([]);
+      }
+    } finally {
+      setInboxLoading(false);
     }
   }, []);
 
@@ -73,31 +81,36 @@ export function HqReviewInbox() {
     step: string,
     comment?: string,
   ) {
-    const res = await fetch(`/api/reports/${id}/${step}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comment: comment ?? "" }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setMessage(data.error ?? "Action failed");
-      if (data.requiresComment && step === "reject") {
-        const r = reports.find((x) => x.id === id);
-        setRejectTarget({
-          kind: "report",
-          id,
-          label: r ? `${r.station.name} ${r.reportDate}` : `Report ${id}`,
-        });
+    setActionBusy(true);
+    try {
+      const res = await fetch(`/api/reports/${id}/${step}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment: comment ?? "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "Action failed");
+        if (data.requiresComment && step === "reject") {
+          const r = reports.find((x) => x.id === id);
+          setRejectTarget({
+            kind: "report",
+            id,
+            label: r ? `${r.station.name} ${r.reportDate}` : `Report ${id}`,
+          });
+        }
+        return;
       }
-      return;
+      setMessage(`${step} completed for ${data.station?.name ?? "report"}`);
+      setRejectTarget(null);
+      setRejectReason("");
+      if (previewId === id) {
+        await loadPreview(id);
+      }
+      load();
+    } finally {
+      setActionBusy(false);
     }
-    setMessage(`${step} completed for ${data.station?.name ?? "report"}`);
-    setRejectTarget(null);
-    setRejectReason("");
-    if (previewId === id) {
-      await loadPreview(id);
-    }
-    load();
   }
 
   async function submitReject() {
@@ -108,27 +121,34 @@ export function HqReviewInbox() {
     if (rejectTarget.kind === "report") {
       await reportAction(rejectTarget.id, "reject", rejectReason.trim());
     } else {
-      const res = await fetch(
-        `/api/reports/amendments/${rejectTarget.id}/reject`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ comment: rejectReason.trim() }),
-        },
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        setMessage(data.error ?? "Reject failed");
-        return;
+      setActionBusy(true);
+      try {
+        const res = await fetch(
+          `/api/reports/amendments/${rejectTarget.id}/reject`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ comment: rejectReason.trim() }),
+          },
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage(data.error ?? "Reject failed");
+          return;
+        }
+        setMessage(data.message ?? "Correction rejected.");
+        setRejectTarget(null);
+        setRejectReason("");
+        load();
+      } finally {
+        setActionBusy(false);
       }
-      setMessage(data.message ?? "Correction rejected.");
-      setRejectTarget(null);
-      setRejectReason("");
-      load();
     }
   }
 
   async function amendmentApprove(id: number) {
+    setActionBusy(true);
+    try {
     const res = await fetch(`/api/reports/amendments/${id}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -142,6 +162,9 @@ export function HqReviewInbox() {
     setMessage(data.message ?? "Correction approved. Totals reconciled.");
     if (previewId) await loadPreview(previewId);
     load();
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   const selected = reports.find((r) => r.id === previewId);
@@ -175,7 +198,7 @@ export function HqReviewInbox() {
             onChange={(e) => setRejectReason(e.target.value)}
           />
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="danger" onClick={submitReject}>
+            <Button type="button" variant="danger" onClick={submitReject} loading={actionBusy}>
               Confirm reject
             </Button>
             <Button
@@ -192,6 +215,9 @@ export function HqReviewInbox() {
         </div>
       )}
 
+      {inboxLoading ? (
+        <LoadingBlock message="Loading inbox from database…" />
+      ) : (
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-8">
           <section>
@@ -236,12 +262,14 @@ export function HqReviewInbox() {
                           <Button
                             size="sm"
                             variant="secondary"
+                            disabled={actionBusy}
                             onClick={() => loadPreview(a.reportId)}
                           >
                             Preview
                           </Button>
                           <Button
                             size="sm"
+                            loading={actionBusy}
                             onClick={() => amendmentApprove(a.id)}
                           >
                             Approve
@@ -401,6 +429,7 @@ export function HqReviewInbox() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

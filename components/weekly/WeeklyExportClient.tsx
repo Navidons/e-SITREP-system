@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 import { Field, inputClassName } from "@/components/ui/field";
 import { useWeekDateRange } from "@/hooks/useWeekDateRange";
 import { ApiError } from "@/lib/client/fetch-json";
@@ -141,9 +142,10 @@ export function WeeklyExportClient() {
         <Button
           type="button"
           onClick={download}
-          disabled={downloading || !isSevenDayWeek}
+          loading={downloading}
+          disabled={!isSevenDayWeek}
         >
-          {downloading ? "Generating…" : "Download weekly Excel"}
+          Download weekly Excel
         </Button>
       </div>
 

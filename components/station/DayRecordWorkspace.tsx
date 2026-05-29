@@ -6,6 +6,8 @@ import { useAppPreferences } from "@/components/providers/AppPreferencesProvider
 import { Button } from "@/components/ui/button";
 import { TabGroup } from "@/components/ui/tabs";
 import { Alert } from "@/components/ui/alert";
+import { LoadingOverlay } from "@/components/ui/loading";
+import { Spinner } from "@/components/ui/spinner";
 import { DailySummaryTable } from "@/components/forms/DailySummaryTable";
 import { RejectionBanner } from "@/components/station/RejectionBanner";
 import { formatDateInput } from "@/lib/utils";
@@ -105,7 +107,7 @@ export function DayRecordWorkspace({
   const { countryLabel } = useAppPreferences();
   const [workTab, setWorkTab] = useState<WorkTabId>("entry");
   const [data, setData] = useState<DayData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
   const [entryType, setEntryType] = useState<EntryType>("arrival");
@@ -132,14 +134,17 @@ export function DayRecordWorkspace({
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/reports/daily?date=${reportDate}`);
-    const json = await res.json();
-    setLoading(false);
-    setData(json);
-    setStaffOnDuty(json.staffOnDuty ?? 0);
-    setMedicalScreening(json.medicalScreening ?? "");
-    setGeneralRemarks(json.generalRemarks ?? "");
-    setUrgentMatters(json.urgentMatters ?? "");
+    try {
+      const res = await fetch(`/api/reports/daily?date=${reportDate}`);
+      const json = await res.json();
+      setData(json);
+      setStaffOnDuty(json.staffOnDuty ?? 0);
+      setMedicalScreening(json.medicalScreening ?? "");
+      setGeneralRemarks(json.generalRemarks ?? "");
+      setUrgentMatters(json.urgentMatters ?? "");
+    } finally {
+      setLoading(false);
+    }
   }, [reportDate]);
 
   useEffect(() => {
@@ -450,7 +455,10 @@ export function DayRecordWorkspace({
           </p>
         </div>
         {loading && (
-          <span className="text-sm font-medium text-zinc-600">Loading…</span>
+          <span className="flex items-center gap-2 text-sm font-medium text-zinc-600">
+            <Spinner size="sm" />
+            Loading day…
+          </span>
         )}
       </div>
 
@@ -467,12 +475,14 @@ export function DayRecordWorkspace({
         </Alert>
       )}
 
-      <TabGroup
-        tabs={workTabs}
-        active={workTab}
-        onChange={(id) => setWorkTab(id as WorkTabId)}
-        minHeight="min-h-[22rem]"
-      >
+      <div className="relative">
+        {loading && <LoadingOverlay message="Loading day record…" />}
+        <TabGroup
+          tabs={workTabs}
+          active={workTab}
+          onChange={(id) => setWorkTab(id as WorkTabId)}
+          minHeight="min-h-[22rem]"
+        >
         <TabGroup.Panel id="entry" className="overflow-visible">
             {isSubmitted && (
               <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -719,7 +729,8 @@ export function DayRecordWorkspace({
               </div>
             </div>
         </TabGroup.Panel>
-      </TabGroup>
+        </TabGroup>
+      </div>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MovementTable } from "@/components/forms/MovementTable";
 import { Button } from "@/components/ui/button";
+import { LoadingOverlay } from "@/components/ui/loading";
 import type { DailyReportPayload, MovementInput } from "@/types/reports";
 import { formatDateInput } from "@/lib/utils";
 
@@ -145,9 +146,10 @@ export function StationReportForm() {
           <p className="text-sm font-medium text-zinc-700">Status</p>
           <p className="font-semibold uppercase text-emerald-800">{status}</p>
         </div>
-        {loading && <p className="text-sm font-medium text-zinc-700">Loading…</p>}
       </div>
 
+      <div className="relative space-y-6">
+        {loading && <LoadingOverlay message="Loading report…" />}
       <MovementTable
         title="Arrivals"
         movementType="arrival"
@@ -255,6 +257,7 @@ export function StationReportForm() {
           </Button>
         </div>
       )}
+      </div>
     </div>
   );
 }
