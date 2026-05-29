@@ -224,6 +224,44 @@ export async function updateAdminUser(
   return { ok: true };
 }
 
+export async function deleteAdminUser(userId: number) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      _count: {
+        select: {
+          reports: true,
+          reportsRejected: true,
+          dailyEntries: true,
+          amendmentsRequested: true,
+        },
+      },
+    },
+  });
+
+  if (!user) return { error: "User not found", status: 404 as const };
+
+  const cannotDelete =
+    user._count.reports > 0 ||
+    user._count.reportsRejected > 0 ||
+    user._count.dailyEntries > 0 ||
+    user._count.amendmentsRequested > 0;
+
+  if (cannotDelete) {
+    return {
+      error: "User has submitted reports or other system activity. Deactivate them instead of deleting.",
+      status: 400 as const,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.userRole.deleteMany({ where: { userId } });
+    await tx.user.delete({ where: { id: userId } });
+  });
+
+  return { ok: true };
+}
+
 export async function createAdminStation(params: {
   code: string;
   name: string;

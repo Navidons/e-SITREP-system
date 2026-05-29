@@ -225,6 +225,74 @@ export function AdminConsole() {
     });
   }
 
+  async function toggleUserActive(u: UserRow) {
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isActive: !u.isActive,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to toggle user status");
+        return;
+      }
+      setMessage(`User "${u.fullName}" ${!u.isActive ? "activated" : "deactivated"}.`);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed");
+    }
+  }
+
+  async function deleteUser(u: UserRow) {
+    if (!confirm(`Are you sure you want to permanently delete the user "${u.fullName}"?`)) {
+      return;
+    }
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to delete user");
+        return;
+      }
+      setMessage(`User "${u.fullName}" successfully deleted.`);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed");
+    }
+  }
+
+  async function toggleStationActive(s: StationRow) {
+    setMessage(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/stations/${s.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          active: !s.active,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to toggle station status");
+        return;
+      }
+      setMessage(`Station "${s.name}" ${!s.active ? "activated" : "deactivated"}.`);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Request failed");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <TabGroup
@@ -396,21 +464,48 @@ export function AdminConsole() {
                     </thead>
                     <tbody>
                       {users.map((u) => (
-                        <tr key={u.id} className="border-t border-zinc-100">
+                        <tr key={u.id} className={`border-t border-zinc-100 ${!u.isActive ? "bg-zinc-50" : ""}`}>
                           <td className="p-3">
-                            <p className="font-semibold">{u.fullName}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold">{u.fullName}</p>
+                              {!u.isActive && (
+                                <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-800">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-zinc-600">{u.username}</p>
                           </td>
                           <td className="p-3">{u.station?.name ?? "—"}</td>
                           <td className="p-3 text-xs">{u.roles.join(", ")}</td>
-                          <td className="p-3">
-                            <button
-                              type="button"
-                              className="text-sm font-semibold text-emerald-800"
-                              onClick={() => editUser(u)}
-                            >
-                              Edit
-                            </button>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                type="button"
+                                className="text-sm font-semibold text-emerald-800 hover:text-emerald-950 transition-colors"
+                                onClick={() => editUser(u)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className={`text-sm font-semibold transition-colors ${
+                                  u.isActive
+                                    ? "text-amber-700 hover:text-amber-900"
+                                    : "text-blue-700 hover:text-blue-900"
+                                }`}
+                                onClick={() => toggleUserActive(u)}
+                              >
+                                {u.isActive ? "Deactivate" : "Activate"}
+                              </button>
+                              <button
+                                type="button"
+                                className="text-sm font-semibold text-rose-600 hover:text-rose-800 transition-colors"
+                                onClick={() => deleteUser(u)}
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -478,6 +573,16 @@ export function AdminConsole() {
                       />
                     </label>
                   </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={stationForm.active}
+                      onChange={(e) =>
+                        setStationForm({ ...stationForm, active: e.target.checked })
+                      }
+                    />
+                    Active station
+                  </label>
                   <div className="flex gap-2">
                     <Button type="submit">
                       {editingStationId ? "Update station" : "Create station"}
@@ -515,18 +620,40 @@ export function AdminConsole() {
                     </thead>
                     <tbody>
                       {stationRows.map((s) => (
-                        <tr key={s.id} className="border-t border-zinc-100">
-                          <td className="p-3 font-semibold">{s.name}</td>
+                        <tr key={s.id} className={`border-t border-zinc-100 ${!s.active ? "bg-zinc-50" : ""}`}>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{s.name}</span>
+                              {!s.active && (
+                                <span className="inline-flex items-center rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-800">
+                                  Inactive
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="p-3">{s.cluster ?? "—"}</td>
                           <td className="p-3">{s.userCount}</td>
-                          <td className="p-3">
-                            <button
-                              type="button"
-                              className="text-sm font-semibold text-emerald-800"
-                              onClick={() => editStation(s)}
-                            >
-                              Edit
-                            </button>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                type="button"
+                                className="text-sm font-semibold text-emerald-800 hover:text-emerald-950 transition-colors"
+                                onClick={() => editStation(s)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className={`text-sm font-semibold transition-colors ${
+                                  s.active
+                                    ? "text-amber-700 hover:text-amber-900"
+                                    : "text-blue-700 hover:text-blue-900"
+                                }`}
+                                onClick={() => toggleStationActive(s)}
+                              >
+                                {s.active ? "Deactivate" : "Activate"}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
