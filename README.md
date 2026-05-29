@@ -2,14 +2,14 @@
 
 Secure web platform to automate **Daily** and **Weekly Border Situation Reports (SITREPs)** for NCIC — station data entry, HQ review workflow, consolidated national daily SITREP (HQ compressed format), and weekly Excel matrix export.
 
-**Stack:** Next.js 16, TypeScript, Prisma, PostgreSQL, NextAuth (credentials).
+**Stack:** Next.js 16, TypeScript, Prisma, PostgreSQL (Render), NextAuth (credentials).
 
-## Quick start
+## Quick start (Render database — no Docker)
 
 ### 1. Prerequisites
 
 - Node.js 20+
-- Docker Desktop (for PostgreSQL)
+- pnpm (`corepack enable` optional)
 
 ### 2. Environment
 
@@ -17,12 +17,19 @@ Secure web platform to automate **Daily** and **Weekly Border Situation Reports 
 cp .env.example .env
 ```
 
-Edit `.env` and set `AUTH_SECRET` (e.g. `openssl rand -base64 32`).
+Edit `.env` (or copy from `.env.example`):
+
+- **`DATABASE_URL`** — Render **External Database URL** (exact string from Render dashboard / `docs/DEPLOY_RENDER.md`)
+- **`AUTH_SECRET`** — e.g. `openssl rand -base64 32`
+- **`NEXTAUTH_URL`** — `http://localhost:3000` for local dev
+
+On a **Render Web Service**, use the **Internal Database URL** for `DATABASE_URL` instead.
+
+See [`docs/DEPLOY_RENDER.md`](docs/DEPLOY_RENDER.md).
 
 ### 3. Database
 
 ```bash
-docker compose up -d
 pnpm install
 pnpm db:push
 pnpm db:seed
@@ -35,6 +42,16 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+### Optional: local PostgreSQL (Docker)
+
+If you prefer a local DB instead of Render:
+
+```bash
+docker compose up -d
+```
+
+Set `DATABASE_URL="postgresql://esitrep:esitrep_dev@localhost:5432/esitrep?schema=public"` in `.env`.
 
 ## Demo accounts
 
@@ -59,7 +76,7 @@ Password for all users: **`Demo@2026`**
 
 **Consolidated SITREP test:** use date **2026-05-22** (many stations approved that day).
 
-**Weekly matrix export:** log in as `admin` or `verifier` → **Weekly export** → choose date range → download. Layout matches `instructions/support-files/WEEKLY STATISTICS 02.08 MAY 2026.xlsx`. Demo week **17–23 May 2026** is fully approved after `pnpm db:seed`.
+**Weekly matrix export:** log in as `admin` or `verifier` → **Weekly export** → choose a 7-day range → download. Layout matches `instructions/support-files/WEEKLY STATISTICS 02.08 MAY 2026.xlsx`.
 
 ## Features (MVP)
 
@@ -74,19 +91,20 @@ Password for all users: **`Demo@2026`**
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Development server |
-| `pnpm db:push` | Apply Prisma schema |
-| `pnpm db:seed` | Seed stations, roles, demo users, Elegu report |
+| `pnpm db:push` | Apply Prisma schema to `DATABASE_URL` |
+| `pnpm db:seed` | Seed stations, roles, demo users, sample reports |
 | `pnpm test:formatter` | Validate Elegu consolidated strings |
+| `pnpm stations:from-weekly` | Regenerate station list from NCIC weekly XLSX |
 
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [**5-page complete guide**](docs/SYSTEM_GUIDE.md) | Everything in one short document (setup, roles, entry, HQ, exports, APIs, demo) — print-friendly |
-| [**System documentation (A–Z)**](docs/SYSTEM_DOCUMENTATION.md) | Full system guide: architecture, RBAC, workflows, APIs, land vs air, exports |
+| [**Render deployment**](docs/DEPLOY_RENDER.md) | Remote Postgres, env vars, web service |
+| [**5-page complete guide**](docs/SYSTEM_GUIDE.md) | Setup, roles, entry, HQ, exports, APIs, demo |
+| [**System documentation (A–Z)**](docs/SYSTEM_DOCUMENTATION.md) | Full architecture and API reference |
 | [`instructions/`](instructions/) | NCIC requirements and sample PDFs/Excel |
-| [`e-sitrep_mvp_build_a94b9943.plan.md`](e-sitrep_mvp_build_a94b9943.plan.md) | Implementation plan |
 
 ## Phase 2 (deferred)
 
-Offline PWA, Keycloak SSO, PDF templates matching exact government layout, admin CRUD UI, Kubernetes deployment.
+Offline PWA, Keycloak SSO, PDF templates matching exact government layout, Kubernetes deployment.

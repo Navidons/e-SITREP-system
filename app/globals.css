@@ -7,22 +7,29 @@
   --moia-green: #0d3b2e;
   --moia-green-dark: #0a2f24;
   --moia-gold: #e8c547;
+  /* System fonts — no network fetch at build time */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  scroll-behavior: auto;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  /* Lock to viewport — only inner panes scroll (desktop-app behaviour) */
-  height: 100dvh;
-  overflow: hidden;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Form fields stay dark-on-white even when OS prefers dark mode */
@@ -30,4 +37,22 @@ input,
 select,
 textarea {
   color: #18181b;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid #0d3b2e;
+  outline-offset: 2px;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-zinc-200 bg-white shadow-sm;
+  }
+
+  .page-intro {
+    @apply text-sm leading-relaxed text-zinc-700;
+  }
 }

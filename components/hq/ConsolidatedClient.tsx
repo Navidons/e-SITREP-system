@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Field, inputClassName } from "@/components/ui/field";
 import { formatDateInput } from "@/lib/utils";
 
 function displayStationName(name: string): string {
@@ -78,16 +80,15 @@ export function ConsolidatedClient() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4 shadow-sm">
-        <label className="text-sm">
-          Report date
+      <div className="card flex flex-wrap items-end gap-3 p-4">
+        <Field label="Report date">
           <input
             type="date"
-            className="mt-1 block rounded border px-3 py-2"
+            className={inputClassName}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />
-        </label>
+        </Field>
         <Button type="button" onClick={generate} disabled={loading}>
           {loading ? "Loading…" : "Load consolidated SITREP"}
         </Button>
@@ -102,9 +103,9 @@ export function ConsolidatedClient() {
       </div>
 
       {error && (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+        <Alert variant="error" onDismiss={() => setError(null)}>
           {error}
-        </p>
+        </Alert>
       )}
 
       {rows.length > 0 && (

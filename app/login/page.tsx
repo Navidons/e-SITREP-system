@@ -1,5 +1,4 @@
 import { loginAction } from "@/app/login/actions";
-import { User, Lock, ShieldCheck, AlertCircle } from "lucide-react";
 
 const ERROR_MESSAGES: Record<string, string> = {
   credentials: "Invalid username or password.",
@@ -18,95 +17,76 @@ export default async function LoginPage({ searchParams }: PageProps) {
     : null;
 
   return (
-    <main className="flex h-dvh items-center justify-center bg-gradient-to-tr from-emerald-950 via-[#0d3b2e] to-[#0a2f24] px-4 text-zinc-900">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden border border-white/10 transition-all duration-200">
-        
-        {/* Header Block with Ministry Branding */}
-        <div className="border-b border-zinc-150 bg-gradient-to-b from-[#0a2f24] to-[#0d3b2e] px-6 py-6 text-center text-white relative">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[#e8c547]" />
-          
+    <main className="flex h-dvh items-center justify-center bg-[#0d3b2e] px-4 text-zinc-900">
+      <div className="w-full max-w-sm rounded-lg bg-white shadow-lg">
+        <div className="border-b border-zinc-200 bg-[#0d3b2e] px-6 py-5 text-center">
           <div
-            className="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-[#061f17]/80 text-[#e8c547] shadow-lg shadow-black/10"
+            className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#e8c547] bg-[#0a2f24]"
             aria-hidden
           >
-            <ShieldCheck className="h-7 w-7" />
+            <svg viewBox="0 0 24 24" className="h-7 w-7 text-[#e8c547]">
+              <path
+                fill="currentColor"
+                d="M12 2l2.2 6.8H21l-5.5 4 2.1 6.7L12 15.5 6.4 19.5l2.1-6.7L3 8.8h6.8L12 2z"
+              />
+            </svg>
           </div>
-          
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#e8c547]">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[#e8c547]">
             Republic of Uganda
           </p>
-          <h1 className="mt-1 text-base font-extrabold leading-snug tracking-tight">
+          <h1 className="mt-1.5 text-base font-bold leading-snug text-white">
             Ministry of Internal Affairs
           </h1>
-          <p className="mt-1 text-xs font-bold text-emerald-300 uppercase tracking-wider">
-            e-SITREP Portal
-          </p>
+          <p className="mt-1 text-sm font-semibold text-white">e-SITREP</p>
         </div>
 
-        {/* Input Form */}
-        <form action={loginAction} className="space-y-5 p-6 bg-white">
+        <form action={loginAction} className="space-y-4 p-6">
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
           {errorMessage ? (
-            <div className="flex gap-2.5 rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-950">
-              <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
-              <div className="space-y-0.5">
-                <p className="font-bold">Sign-in Alert</p>
-                <p className="text-xs text-red-800">{errorMessage}</p>
-              </div>
-            </div>
+            <p className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              {errorMessage}
+            </p>
           ) : null}
 
-          <div className="space-y-1.5">
+          <div>
             <label
               htmlFor="username"
-              className="block text-xs font-bold uppercase tracking-wider text-zinc-600"
+              className="mb-1 block text-sm font-semibold text-zinc-900"
             >
               Username
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-450">
-                <User className="h-4 w-4 text-zinc-400" />
-              </div>
-              <input
-                id="username"
-                name="username"
-                autoComplete="username"
-                required
-                placeholder="Enter username"
-                className="w-full rounded-lg border border-zinc-300 bg-white pl-10 pr-4 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none placeholder:text-zinc-400"
-              />
-            </div>
+            <input
+              id="username"
+              name="username"
+              autoComplete="username"
+              required
+              className="w-full rounded border border-zinc-400 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500"
+            />
           </div>
 
-          <div className="space-y-1.5">
+          <div>
             <label
               htmlFor="password"
-              className="block text-xs font-bold uppercase tracking-wider text-zinc-600"
+              className="mb-1 block text-sm font-semibold text-zinc-900"
             >
               Password
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-450">
-                <Lock className="h-4 w-4 text-zinc-400" />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-zinc-300 bg-white pl-10 pr-4 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/20 outline-none placeholder:text-zinc-400"
-              />
-            </div>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              className="w-full rounded border border-zinc-400 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-500"
+            />
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#0d3b2e] py-3 text-sm font-bold text-white shadow-md shadow-emerald-950/10 hover:bg-[#0a2f24] active:scale-[0.99] transition-all duration-150 cursor-pointer"
+            className="w-full rounded bg-[#0d3b2e] py-2.5 text-sm font-semibold text-white hover:bg-[#0a2f24]"
           >
-            Sign In
+            Sign in
           </button>
         </form>
       </div>

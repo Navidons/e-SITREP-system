@@ -64,10 +64,10 @@ export function DonutChart({
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number, name: string) => [
-            `${value.toLocaleString()} (${Math.round((value / total) * 100)}%)`,
-            name,
-          ]}
+          formatter={(value, name) => {
+            const v = typeof value === "number" ? value : 0;
+            return [`${v.toLocaleString()} (${Math.round((v / total) * 100)}%)`, String(name)];
+          }}
           contentStyle={{
             borderRadius: "10px",
             border: "1px solid #e2e8f0",

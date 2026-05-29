@@ -30,21 +30,20 @@ Manual process today: each post sends a report → HQ retypes into one national 
 |-------|------------|
 | App | Next.js 16 (App Router), React 19, TypeScript, Tailwind 4 |
 | Auth | NextAuth v5 (credentials, JWT session) |
-| Data | Prisma 6 → PostgreSQL 16 (Docker locally) |
+| Data | Prisma 6 → PostgreSQL on Render (or Docker locally) |
 | Export | ExcelJS (weekly matrix) |
 
 **First-time setup**
 
 ```bash
-cp .env.example .env          # set AUTH_SECRET (openssl rand -base64 32)
-docker compose up -d
+cp .env.example .env          # DATABASE_URL (Render external URL), AUTH_SECRET
 pnpm install && pnpm db:push && pnpm db:seed
 pnpm dev                      # http://localhost:3000
 ```
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | PostgreSQL connection |
+| `DATABASE_URL` | PostgreSQL (Render external or internal URL) |
 | `AUTH_SECRET` | Session signing (required) |
 | `NEXTAUTH_URL` | Public URL in production |
 

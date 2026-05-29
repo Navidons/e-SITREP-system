@@ -68,7 +68,7 @@ export function canAccessStation(
 }
 
 export function homePathForRoles(roles: string[]): string {
-  if (roles.includes("ADMIN")) return "/admin/dashboard";
-  if (roles.some((r) => r.startsWith("HQ_"))) return "/hq/dashboard";
-  return "/station/dashboard";
+  if (roles.includes("ADMIN")) return "/admin";
+  if (roles.some((r) => r.startsWith("HQ_"))) return "/hq/inbox";
+  return "/station";
 }

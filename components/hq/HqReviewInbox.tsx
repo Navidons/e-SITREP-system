@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 import { ReportPreviewPanel } from "@/components/hq/ReportPreviewPanel";
 import type { DayData } from "@/components/station/shared-day-types";
 
@@ -148,9 +149,17 @@ export function HqReviewInbox() {
   return (
     <div className="space-y-6">
       {message && (
-        <p className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-950">
+        <Alert
+          variant={
+            message.toLowerCase().includes("fail") ||
+            message.toLowerCase().includes("required")
+              ? "error"
+              : "success"
+          }
+          onDismiss={() => setMessage(null)}
+        >
           {message}
-        </p>
+        </Alert>
       )}
 
       {rejectTarget && (

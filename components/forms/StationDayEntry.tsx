@@ -297,7 +297,7 @@ export function StationDayEntry() {
           onChange={(id) => setActiveTab(id as TabId)}
         />
 
-        <div className={activeTab !== "entry" ? "hidden" : undefined}>
+        {activeTab === "entry" && (
           <TabPanel>
             {readOnly ? (
               <p className="text-sm font-medium text-zinc-700">
@@ -402,9 +402,9 @@ export function StationDayEntry() {
               </>
             )}
           </TabPanel>
-        </div>
+        )}
 
-        <div className={activeTab !== "log" ? "hidden" : undefined}>
+        {activeTab === "log" && (
           <TabPanel className="p-0">
             <div className="overflow-x-auto p-4">
               <table className="w-full min-w-[520px] text-sm">
@@ -466,9 +466,9 @@ export function StationDayEntry() {
               </table>
             </div>
           </TabPanel>
-        </div>
+        )}
 
-        <div className={activeTab !== "totals" ? "hidden" : undefined}>
+        {activeTab === "totals" && (
           <TabPanel className="border-0 bg-transparent p-0 shadow-none">
             {data?.summary ? (
               <DailySummaryTable
@@ -484,9 +484,9 @@ export function StationDayEntry() {
               </p>
             )}
           </TabPanel>
-        </div>
+        )}
 
-        <div className={activeTab !== "submit" ? "hidden" : undefined}>
+        {activeTab === "submit" && (
           <TabPanel>
             <div className="space-y-4">
               <p className="text-sm text-zinc-700">
@@ -561,7 +561,7 @@ export function StationDayEntry() {
               )}
             </div>
           </TabPanel>
-        </div>
+        )}
       </div>
     </div>
   );
